@@ -292,6 +292,18 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
 .msg { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 14px; }
 .msg.success { background: rgba(155,230,177,0.1); color: var(--success); border: 1px solid var(--success); }
 .msg.error { background: rgba(255,138,138,0.1); color: var(--danger); border: 1px solid var(--danger); }
+.recap-list { margin: 8px 0 0; padding-left: 18px; color: var(--text); font-size: 13px; }
+.recap-list li { margin-bottom: 2px; }
+.recap-warning { margin-top: 8px; color: var(--danger); font-size: 13px; }
+.recap-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--lavender);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid var(--lavender);
+}
+.recap-link:hover { color: var(--purple); border-color: var(--purple); }
 .spinner {
   display: inline-block; width: 14px; height: 14px;
   border: 2px solid var(--border); border-top-color: var(--lavender);
