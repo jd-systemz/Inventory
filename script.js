@@ -448,11 +448,24 @@ function setupBulkForm(prefix, type) {
       });
       if (res.error) throw new Error(res.error);
       msg.className = 'msg success';
-      let text = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
+
+      // Recap exactly what was just written, plus a direct link to the
+      // Smartsheet sheet, so it's obvious the data actually landed somewhere.
+      const recapItems = pending.map(function (r) {
+        return '<li>' + escapeHtml(r.itemName) + ' &mdash; qty ' + escapeHtml(r.qty) +
+          ', ' + escapeHtml(r.lob) + ', ' + escapeHtml(dateInput.value) + '</li>';
+      }).join('');
+      let html = '<strong>' + res.count + ' ' + type.toLowerCase() + ' entr' +
+        (res.count === 1 ? 'y' : 'ies') + ' saved to Smartsheet:</strong>' +
+        '<ul class="recap-list">' + recapItems + '</ul>';
       if (res.attachErrors && res.attachErrors.length) {
-        text += ' (Some photos failed to attach: ' + res.attachErrors.join('; ') + ')';
+        html += '<div class="recap-warning">Some photos failed to attach: ' + escapeHtml(res.attachErrors.join('; ')) + '</div>';
       }
-      msg.textContent = text;
+      if (res.sheetUrl) {
+        html += '<a class="recap-link" href="' + escapeHtml(res.sheetUrl) + '" target="_blank" rel="noopener">Open this sheet in Smartsheet &#8599;</a>';
+      }
+      msg.innerHTML = html;
+
       pending = [];
       render();
     } catch (err) {
