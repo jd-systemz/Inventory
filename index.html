@@ -22,7 +22,7 @@
     <div id="overlay" class="overlay"></div>
 
     <main id="content">
-      <!-- Check Stocks -->
+      <!-- Check Stocks (untouched) -->
       <section id="view-checkStocks" class="view active">
         <div class="card">
           <h2>Check Stocks</h2>
@@ -41,23 +41,28 @@
       <section id="view-receiving" class="view">
         <div class="card">
           <h2>Receiving</h2>
-          <label>Issued/Received Date <span class="hint">(applies to every item below)</span>
+          <label class="field">Issued/Received Date <span class="hint">(applies to every item below)</span>
             <input type="date" id="receiving-date" required />
           </label>
 
           <div class="line-entry">
-            <label>Enhanced Item
+            <label class="field">Enhanced Item
               <div class="row">
-                <select id="receiving-item" class="item-select"></select>
+                <div class="combo" id="receiving-item-combo">
+                  <input type="text" class="combo-input" id="receiving-item-input" placeholder="Type to search item..." autocomplete="off" />
+                  <input type="hidden" id="receiving-item-value" />
+                  <div class="combo-list hidden" id="receiving-item-list"></div>
+                </div>
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="receiving-item">Scan</button>
               </div>
+              <div id="receiving-item-error" class="field-error hidden"></div>
             </label>
             <div class="row">
-              <label>Unit Price<input type="number" id="receiving-unitPrice" step="0.01" min="0" /></label>
-              <label>QTY<input type="number" id="receiving-qty" step="1" min="1" /></label>
+              <label class="field">Unit Price<input type="number" id="receiving-unitPrice" step="0.01" min="0" /></label>
+              <label class="field">QTY<input type="number" id="receiving-qty" step="1" min="1" /></label>
             </div>
             <div class="row">
-              <label>LOB
+              <label class="field">LOB
                 <select id="receiving-lob">
                   <option value="">Select LOB</option>
                   <option value="ACP">ACP</option>
@@ -65,22 +70,28 @@
                   <option value="SCP">SCP</option>
                 </select>
               </label>
-              <label>Completed
+              <label class="field">Completed
                 <select id="receiving-completed">
                   <option value="YES">YES</option>
                   <option value="NO">NO</option>
                 </select>
               </label>
             </div>
+            <label class="field">Photo <span class="hint">(optional)</span>
+              <input type="file" id="receiving-photo" accept="image/*" capture="environment" />
+            </label>
+            <div id="receiving-photo-preview" class="photo-preview hidden"></div>
             <button type="button" id="receiving-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
           <div class="pending-list">
             <h3>Items to submit (<span id="receiving-count">0</span>)</h3>
-            <table id="receiving-table" class="line-table">
-              <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
-              <tbody></tbody>
-            </table>
+            <div class="table-wrap">
+              <table id="receiving-table" class="line-table">
+                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Photo</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
             <button type="button" id="receiving-submit-all" class="btn btn-primary" disabled>Submit All</button>
           </div>
           <div id="msg-receiving" class="msg hidden"></div>
@@ -91,23 +102,28 @@
       <section id="view-issuance" class="view">
         <div class="card">
           <h2>Issuance</h2>
-          <label>Issued/Received Date <span class="hint">(applies to every item below)</span>
+          <label class="field">Issued/Received Date <span class="hint">(applies to every item below)</span>
             <input type="date" id="issuance-date" required />
           </label>
 
           <div class="line-entry">
-            <label>Enhanced Item
+            <label class="field">Enhanced Item
               <div class="row">
-                <select id="issuance-item" class="item-select"></select>
+                <div class="combo" id="issuance-item-combo">
+                  <input type="text" class="combo-input" id="issuance-item-input" placeholder="Type to search item..." autocomplete="off" />
+                  <input type="hidden" id="issuance-item-value" />
+                  <div class="combo-list hidden" id="issuance-item-list"></div>
+                </div>
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="issuance-item">Scan</button>
               </div>
+              <div id="issuance-item-error" class="field-error hidden"></div>
             </label>
             <div class="row">
-              <label>Unit Price<input type="number" id="issuance-unitPrice" step="0.01" min="0" /></label>
-              <label>QTY<input type="number" id="issuance-qty" step="1" min="1" /></label>
+              <label class="field">Unit Price<input type="number" id="issuance-unitPrice" step="0.01" min="0" /></label>
+              <label class="field">QTY<input type="number" id="issuance-qty" step="1" min="1" /></label>
             </div>
             <div class="row">
-              <label>LOB
+              <label class="field">LOB
                 <select id="issuance-lob">
                   <option value="">Select LOB</option>
                   <option value="ACP">ACP</option>
@@ -115,22 +131,28 @@
                   <option value="SCP">SCP</option>
                 </select>
               </label>
-              <label>Completed
+              <label class="field">Completed
                 <select id="issuance-completed">
                   <option value="YES">YES</option>
                   <option value="NO">NO</option>
                 </select>
               </label>
             </div>
+            <label class="field">Photo <span class="hint">(optional)</span>
+              <input type="file" id="issuance-photo" accept="image/*" capture="environment" />
+            </label>
+            <div id="issuance-photo-preview" class="photo-preview hidden"></div>
             <button type="button" id="issuance-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
           <div class="pending-list">
             <h3>Items to submit (<span id="issuance-count">0</span>)</h3>
-            <table id="issuance-table" class="line-table">
-              <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
-              <tbody></tbody>
-            </table>
+            <div class="table-wrap">
+              <table id="issuance-table" class="line-table">
+                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Photo</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
             <button type="button" id="issuance-submit-all" class="btn btn-primary" disabled>Submit All</button>
           </div>
           <div id="msg-issuance" class="msg hidden"></div>
