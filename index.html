@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventory</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button id="menuBtn" class="icon-btn" aria-label="Menu">&#9776;</button>
+      <h1>Inventory</h1>
+      <div class="spacer"></div>
+    </header>
+
+    <nav id="sideMenu" class="side-menu">
+      <button class="menu-item active" data-view="checkStocks">Check Stocks</button>
+      <button class="menu-item" data-view="receiving">Receiving</button>
+      <button class="menu-item" data-view="issuance">Issuance</button>
+    </nav>
+    <div id="overlay" class="overlay"></div>
+
+    <main id="content">
+      <!-- Check Stocks -->
+      <section id="view-checkStocks" class="view active">
+        <div class="card">
+          <h2>Check Stocks</h2>
+          <div class="row">
+            <button id="startScanCheck" class="btn btn-primary">Scan Item</button>
+          </div>
+          <div class="manual-entry row">
+            <input id="manualCode" type="text" placeholder="Or type / scan Item Code" />
+            <button id="manualCodeGo" class="btn btn-ghost">Enter</button>
+          </div>
+          <div id="stockResult" class="result-card hidden"></div>
+        </div>
+      </section>
+
+      <!-- Receiving -->
+      <section id="view-receiving" class="view">
+        <div class="card">
+          <h2>Receiving</h2>
+          <form id="form-receiving" class="txn-form">
+            <label>Enhanced Item
+              <div class="row">
+                <select name="itemName" required></select>
+                <button type="button" class="btn btn-ghost scan-item-btn" data-form="form-receiving">Scan</button>
+              </div>
+            </label>
+            <label>Unit Price
+              <input type="number" step="0.01" min="0" name="unitPrice" required />
+            </label>
+            <label>QTY
+              <input type="number" step="1" min="1" name="qty" required />
+            </label>
+            <label>Issued/Received Date
+              <input type="date" name="date" required />
+            </label>
+            <label>LOB
+              <select name="lob" required>
+                <option value="">Select LOB</option>
+                <option value="ACP">ACP</option>
+                <option value="GCP">GCP</option>
+                <option value="SCP">SCP</option>
+              </select>
+            </label>
+            <label>Completed
+              <select name="completed">
+                <option value="YES">YES</option>
+                <option value="NO">NO</option>
+              </select>
+            </label>
+            <button type="submit" class="btn btn-primary">Add Receiving Entry</button>
+          </form>
+          <div id="msg-receiving" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Issuance -->
+      <section id="view-issuance" class="view">
+        <div class="card">
+          <h2>Issuance</h2>
+          <form id="form-issuance" class="txn-form">
+            <label>Enhanced Item
+              <div class="row">
+                <select name="itemName" required></select>
+                <button type="button" class="btn btn-ghost scan-item-btn" data-form="form-issuance">Scan</button>
+              </div>
+            </label>
+            <label>Unit Price
+              <input type="number" step="0.01" min="0" name="unitPrice" required />
+            </label>
+            <label>QTY
+              <input type="number" step="1" min="1" name="qty" required />
+            </label>
+            <label>Issued/Received Date
+              <input type="date" name="date" required />
+            </label>
+            <label>LOB
+              <select name="lob" required>
+                <option value="">Select LOB</option>
+                <option value="ACP">ACP</option>
+                <option value="GCP">GCP</option>
+                <option value="SCP">SCP</option>
+              </select>
+            </label>
+            <label>Completed
+              <select name="completed">
+                <option value="YES">YES</option>
+                <option value="NO">NO</option>
+              </select>
+            </label>
+            <button type="submit" class="btn btn-primary">Add Issuance Entry</button>
+          </form>
+          <div id="msg-issuance" class="msg hidden"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Shared scanner modal, used by all three views -->
+  <div id="scannerModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="scannerTitle">Scan</h3>
+        <button id="closeScanner" class="icon-btn" aria-label="Close">&#10005;</button>
+      </div>
+      <div id="scannerRegion" class="scanner-box"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
