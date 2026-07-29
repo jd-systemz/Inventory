@@ -121,18 +121,14 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   color: var(--text-dim);
 }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.row { display: flex; gap: 10px; margin: 14px 0; flex-wrap: nowrap; align-items: stretch; }
-.row select, .row input { flex: 1; margin-top: 0 !important; }
-.manual-entry.row { margin-top: 10px; }
-.scan-item-btn { flex: 0 0 auto; }
-.scanner-box {
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
-  min-height: 0;
-}
-.manual-entry input, .txn-form input, .txn-form select {
+
+/* ---- Generic form control theming: applies to EVERYTHING inside a .card,
+   so date pickers, LOB/Completed selects, price/qty inputs, and the combo
+   box all get the same dark styling regardless of what wraps them. ---- */
+.card input[type="text"],
+.card input[type="number"],
+.card input[type="date"],
+.card select {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
@@ -142,9 +138,57 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   font-size: 15px;
   margin-top: 6px;
 }
-.txn-form { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
-.txn-form label { font-size: 13px; color: var(--text-dim); }
+.card input[type="date"] { color-scheme: dark; }
+.card select option { background: var(--panel-alt); color: var(--text); }
+.card input[type="file"] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: var(--panel-alt);
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.card input[type="file"]::file-selector-button {
+  background: var(--purple-glow);
+  color: var(--lavender);
+  border: 1px solid var(--purple);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.row { display: flex; gap: 10px; margin: 14px 0; flex-wrap: nowrap; align-items: flex-start; }
+.manual-entry.row { margin-top: 10px; align-items: stretch; }
+/* Direct-child inputs/selects/buttons in a row stretch evenly (Check Stocks
+   uses this pattern directly; Enhanced Item + Scan button uses it too). */
+.row > input, .row > select, .row > .combo { flex: 1; margin-top: 0 !important; }
+.row > .scan-item-btn { flex: 0 0 auto; }
+/* Label-wrapped inputs (Unit Price / QTY, LOB / Completed) need the LABEL
+   itself to be the flex item, with its own vertical stack inside. */
+.row > label.field { flex: 1; margin: 0; }
+
+.field { display: flex; flex-direction: column; gap: 0; font-size: 13px; color: var(--text-dim); margin-top: 14px; }
+.field:first-child { margin-top: 0; }
+.field-error {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+.field-error.hidden { display: none; }
 .hint { color: var(--text-dim); font-weight: 400; }
+
+.scanner-box {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  min-height: 0;
+}
+
 .line-entry {
   margin-top: 14px;
   padding: 14px;
@@ -152,24 +196,78 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
-.line-entry label { font-size: 13px; color: var(--text-dim); flex: 1; }
+.line-entry > .btn { margin-top: 16px; }
+
+/* ---- Type-to-search combobox ---- */
+.combo { position: relative; }
+.combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--panel-alt);
+  border: 1px solid var(--purple);
+  border-radius: 10px;
+  z-index: 25;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.combo-list.hidden { display: none; }
+.combo-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.combo-option:last-child { border-bottom: none; }
+.combo-option:hover, .combo-option.active {
+  background: var(--purple-glow);
+  color: var(--lavender);
+}
+.combo-empty { padding: 10px 12px; color: var(--text-dim); font-size: 13px; }
+
+/* ---- Photo upload preview ---- */
+.photo-preview { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+.photo-preview.hidden { display: none; }
+.photo-preview img {
+  width: 64px; height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.photo-preview .remove-photo {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+/* ---- Pending items table ---- */
 .pending-list { margin-top: 20px; }
 .pending-list h3 { color: var(--lavender); font-size: 15px; margin-bottom: 8px; }
-.line-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 12px;
-  font-size: 13px;
-}
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; }
+.line-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
 .line-table th, .line-table td {
-  padding: 8px 6px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   color: var(--text);
+  white-space: nowrap;
 }
-.line-table th { color: var(--text-dim); font-weight: 600; }
+.line-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  background: var(--panel-alt);
+}
+.line-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.line-table tbody tr:last-child td { border-bottom: none; }
+.line-table .thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; display: block; }
+.line-table .no-photo { color: var(--text-dim); }
 .remove-line {
   background: transparent;
   border: none;
@@ -178,6 +276,7 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   font-size: 14px;
   padding: 4px 8px;
 }
+
 .result-card {
   margin-top: 16px;
   padding: 16px;
