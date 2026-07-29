@@ -1,5 +1,5 @@
 // ⚠️ PASTE your deployed Apps Script Web App URL here (ends in /exec):
-const API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxx448moFrOP0e5lYa9FBpzXiXdCgvyqT3xhYHhfuL-ecdJk8as7pSvFeZfmhvYGbQ-/exec';
 
 // ===================== API HELPERS =====================
 
