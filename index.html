@@ -41,38 +41,48 @@
       <section id="view-receiving" class="view">
         <div class="card">
           <h2>Receiving</h2>
-          <form id="form-receiving" class="txn-form">
+          <label>Issued/Received Date <span class="hint">(applies to every item below)</span>
+            <input type="date" id="receiving-date" required />
+          </label>
+
+          <div class="line-entry">
             <label>Enhanced Item
               <div class="row">
-                <select name="itemName" required></select>
-                <button type="button" class="btn btn-ghost scan-item-btn" data-form="form-receiving">Scan</button>
+                <select id="receiving-item" class="item-select"></select>
+                <button type="button" class="btn btn-ghost scan-item-btn" data-target="receiving-item">Scan</button>
               </div>
             </label>
-            <label>Unit Price
-              <input type="number" step="0.01" min="0" name="unitPrice" required />
-            </label>
-            <label>QTY
-              <input type="number" step="1" min="1" name="qty" required />
-            </label>
-            <label>Issued/Received Date
-              <input type="date" name="date" required />
-            </label>
-            <label>LOB
-              <select name="lob" required>
-                <option value="">Select LOB</option>
-                <option value="ACP">ACP</option>
-                <option value="GCP">GCP</option>
-                <option value="SCP">SCP</option>
-              </select>
-            </label>
-            <label>Completed
-              <select name="completed">
-                <option value="YES">YES</option>
-                <option value="NO">NO</option>
-              </select>
-            </label>
-            <button type="submit" class="btn btn-primary">Add Receiving Entry</button>
-          </form>
+            <div class="row">
+              <label>Unit Price<input type="number" id="receiving-unitPrice" step="0.01" min="0" /></label>
+              <label>QTY<input type="number" id="receiving-qty" step="1" min="1" /></label>
+            </div>
+            <div class="row">
+              <label>LOB
+                <select id="receiving-lob">
+                  <option value="">Select LOB</option>
+                  <option value="ACP">ACP</option>
+                  <option value="GCP">GCP</option>
+                  <option value="SCP">SCP</option>
+                </select>
+              </label>
+              <label>Completed
+                <select id="receiving-completed">
+                  <option value="YES">YES</option>
+                  <option value="NO">NO</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" id="receiving-add" class="btn btn-primary">+ Add to List</button>
+          </div>
+
+          <div class="pending-list">
+            <h3>Items to submit (<span id="receiving-count">0</span>)</h3>
+            <table id="receiving-table" class="line-table">
+              <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button type="button" id="receiving-submit-all" class="btn btn-primary" disabled>Submit All</button>
+          </div>
           <div id="msg-receiving" class="msg hidden"></div>
         </div>
       </section>
@@ -81,38 +91,48 @@
       <section id="view-issuance" class="view">
         <div class="card">
           <h2>Issuance</h2>
-          <form id="form-issuance" class="txn-form">
+          <label>Issued/Received Date <span class="hint">(applies to every item below)</span>
+            <input type="date" id="issuance-date" required />
+          </label>
+
+          <div class="line-entry">
             <label>Enhanced Item
               <div class="row">
-                <select name="itemName" required></select>
-                <button type="button" class="btn btn-ghost scan-item-btn" data-form="form-issuance">Scan</button>
+                <select id="issuance-item" class="item-select"></select>
+                <button type="button" class="btn btn-ghost scan-item-btn" data-target="issuance-item">Scan</button>
               </div>
             </label>
-            <label>Unit Price
-              <input type="number" step="0.01" min="0" name="unitPrice" required />
-            </label>
-            <label>QTY
-              <input type="number" step="1" min="1" name="qty" required />
-            </label>
-            <label>Issued/Received Date
-              <input type="date" name="date" required />
-            </label>
-            <label>LOB
-              <select name="lob" required>
-                <option value="">Select LOB</option>
-                <option value="ACP">ACP</option>
-                <option value="GCP">GCP</option>
-                <option value="SCP">SCP</option>
-              </select>
-            </label>
-            <label>Completed
-              <select name="completed">
-                <option value="YES">YES</option>
-                <option value="NO">NO</option>
-              </select>
-            </label>
-            <button type="submit" class="btn btn-primary">Add Issuance Entry</button>
-          </form>
+            <div class="row">
+              <label>Unit Price<input type="number" id="issuance-unitPrice" step="0.01" min="0" /></label>
+              <label>QTY<input type="number" id="issuance-qty" step="1" min="1" /></label>
+            </div>
+            <div class="row">
+              <label>LOB
+                <select id="issuance-lob">
+                  <option value="">Select LOB</option>
+                  <option value="ACP">ACP</option>
+                  <option value="GCP">GCP</option>
+                  <option value="SCP">SCP</option>
+                </select>
+              </label>
+              <label>Completed
+                <select id="issuance-completed">
+                  <option value="YES">YES</option>
+                  <option value="NO">NO</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" id="issuance-add" class="btn btn-primary">+ Add to List</button>
+          </div>
+
+          <div class="pending-list">
+            <h3>Items to submit (<span id="issuance-count">0</span>)</h3>
+            <table id="issuance-table" class="line-table">
+              <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button type="button" id="issuance-submit-all" class="btn btn-primary" disabled>Submit All</button>
+          </div>
           <div id="msg-issuance" class="msg hidden"></div>
         </div>
       </section>
