@@ -141,7 +141,7 @@ async function loadItemList() {
       console.error(items.error);
       return;
     }
-    document.querySelectorAll('select[name="itemName"]').forEach(function (sel) {
+    document.querySelectorAll('select.item-select').forEach(function (sel) {
       const current = sel.value;
       sel.innerHTML = '<option value="">Select item</option>';
       items.forEach(function (it) {
@@ -161,18 +161,17 @@ async function loadItemList() {
 
 document.querySelectorAll('.scan-item-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
-    const formId = btn.dataset.form;
+    const targetId = btn.dataset.target;
     openScanner('Scan Item Barcode', function (code) {
-      selectItemByCode(formId, code);
+      selectItemByCode(targetId, code);
     });
   });
 });
 
-async function selectItemByCode(formId, code) {
-  const form = document.getElementById(formId);
-  const msgId = formId === 'form-receiving' ? 'msg-receiving' : 'msg-issuance';
-  const msg = document.getElementById(msgId);
-  const sel = form.querySelector('select[name="itemName"]');
+async function selectItemByCode(selectId, code) {
+  const sel = document.getElementById(selectId);
+  const prefix = selectId.split('-')[0]; // 'receiving' or 'issuance'
+  const msg = document.getElementById('msg-' + prefix);
 
   msg.className = 'msg';
   msg.classList.remove('hidden');
@@ -199,58 +198,102 @@ async function selectItemByCode(formId, code) {
   }
 }
 
-// ===================== RECEIVING / ISSUANCE FORMS =====================
+// ===================== RECEIVING / ISSUANCE — BULK ADD & SUBMIT =====================
 
-function setupTxnForm(formId, msgId, type) {
-  const form = document.getElementById(formId);
-  const msg = document.getElementById(msgId);
-  const dateInput = form.querySelector('input[name="date"]');
-  const completedSelect = form.querySelector('select[name="completed"]');
+function setupBulkForm(prefix, type) {
+  const dateInput = document.getElementById(prefix + '-date');
+  const itemSel = document.getElementById(prefix + '-item');
+  const priceInput = document.getElementById(prefix + '-unitPrice');
+  const qtyInput = document.getElementById(prefix + '-qty');
+  const lobSel = document.getElementById(prefix + '-lob');
+  const completedSel = document.getElementById(prefix + '-completed');
+  const addBtn = document.getElementById(prefix + '-add');
+  const tableBody = document.querySelector('#' + prefix + '-table tbody');
+  const countEl = document.getElementById(prefix + '-count');
+  const submitAllBtn = document.getElementById(prefix + '-submit-all');
+  const msg = document.getElementById('msg-' + prefix);
 
-  function resetDefaults() {
-    dateInput.value = new Date().toISOString().slice(0, 10);
-    completedSelect.value = 'YES';
+  let pending = [];
+  dateInput.value = new Date().toISOString().slice(0, 10);
+
+  function render() {
+    tableBody.innerHTML = '';
+    pending.forEach(function (row, idx) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(row.itemName) + '</td>' +
+        '<td>' + escapeHtml(row.unitPrice) + '</td>' +
+        '<td>' + escapeHtml(row.qty) + '</td>' +
+        '<td>' + escapeHtml(row.lob) + '</td>' +
+        '<td>' + escapeHtml(row.completed) + '</td>' +
+        '<td><button type="button" class="remove-line" data-idx="' + idx + '">&#10005;</button></td>';
+      tableBody.appendChild(tr);
+    });
+    countEl.textContent = pending.length;
+    submitAllBtn.disabled = pending.length === 0;
+    tableBody.querySelectorAll('.remove-line').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        pending.splice(Number(btn.dataset.idx), 1);
+        render();
+      });
+    });
   }
-  resetDefaults();
 
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const payload = {
-      type: type,
-      itemName: fd.get('itemName'),
-      unitPrice: fd.get('unitPrice'),
-      qty: fd.get('qty'),
-      date: fd.get('date'),
-      lob: fd.get('lob'),
-      completed: fd.get('completed')
-    };
-    const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
+  addBtn.addEventListener('click', function () {
+    if (!itemSel.value) { alert('Select an item first.'); return; }
+    if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
+    if (!lobSel.value) { alert('Select an LOB.'); return; }
+
+    pending.push({
+      itemName: itemSel.value,
+      unitPrice: priceInput.value || 0,
+      qty: qtyInput.value,
+      lob: lobSel.value,
+      completed: completedSel.value
+    });
+    render();
+
+    // Clear the item-specific fields so the next line starts fresh;
+    // keep LOB/Completed since batches are often all the same.
+    itemSel.value = '';
+    priceInput.value = '';
+    qtyInput.value = '';
+  });
+
+  submitAllBtn.addEventListener('click', async function () {
+    if (!pending.length) return;
+    if (!dateInput.value) { alert('Pick a date.'); return; }
+
+    submitAllBtn.disabled = true;
     msg.className = 'msg';
     msg.classList.remove('hidden');
-    msg.innerHTML = '<span class="spinner"></span> Saving...';
+    msg.innerHTML = '<span class="spinner"></span> Saving ' + pending.length + ' item(s)...';
 
     try {
-      const res = await apiPost('submitTransaction', payload);
+      const res = await apiPost('submitBulkTransactions', {
+        type: type,
+        date: dateInput.value,
+        rows: pending
+      });
       if (res.error) throw new Error(res.error);
       msg.className = 'msg success';
-      msg.textContent = type + ' entry added successfully.';
-      form.reset();
-      resetDefaults();
+      msg.textContent = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
+      pending = [];
+      render();
     } catch (err) {
       msg.className = 'msg error';
       msg.textContent = err.message || String(err);
-    } finally {
-      submitBtn.disabled = false;
+      submitAllBtn.disabled = false; // let them retry without losing the list
     }
   });
+
+  render();
 }
 
 // ===================== INIT =====================
 
 window.addEventListener('load', function () {
   loadItemList();
-  setupTxnForm('form-receiving', 'msg-receiving', 'Receiving');
-  setupTxnForm('form-issuance', 'msg-issuance', 'Issuance');
+  setupBulkForm('receiving', 'Receiving');
+  setupBulkForm('issuance', 'Issuance');
 });
