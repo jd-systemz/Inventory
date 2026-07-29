@@ -144,6 +144,40 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
 }
 .txn-form { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
 .txn-form label { font-size: 13px; color: var(--text-dim); }
+.hint { color: var(--text-dim); font-weight: 400; }
+.line-entry {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.line-entry label { font-size: 13px; color: var(--text-dim); flex: 1; }
+.pending-list { margin-top: 20px; }
+.pending-list h3 { color: var(--lavender); font-size: 15px; margin-bottom: 8px; }
+.line-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.line-table th, .line-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+}
+.line-table th { color: var(--text-dim); font-weight: 600; }
+.remove-line {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
 .result-card {
   margin-top: 16px;
   padding: 16px;
