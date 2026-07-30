@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark; /* makes native date-picker icon, calendar popup, etc. render in dark mode */
   --bg: #0b0b10;
   --panel: #16151d;
   --panel-alt: #1d1c26;
@@ -101,6 +102,45 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   color: var(--lavender);
   font-size: 20px;
 }
+
+/* ---- Universal form field styling (covers every input/select in the app) ---- */
+.field { margin-bottom: 14px; }
+.field label, .line-entry > .field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.hint { color: var(--text-dim); font-weight: 400; }
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="file"],
+select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+select { cursor: pointer; }
+input[type="file"] { padding: 8px; font-size: 13px; }
+input[type="file"]::file-selector-button {
+  background: var(--purple);
+  color: #0b0b10;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 10px;
+}
+input::placeholder { color: var(--text-dim); opacity: 0.7; }
+
 .btn {
   border: none;
   border-radius: 10px;
@@ -120,66 +160,13 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   border: 1px solid var(--border);
   color: var(--text-dim);
 }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ---- Generic form control theming: applies to EVERYTHING inside a .card,
-   so date pickers, LOB/Completed selects, price/qty inputs, and the combo
-   box all get the same dark styling regardless of what wraps them. ---- */
-.card input[type="text"],
-.card input[type="number"],
-.card input[type="date"],
-.card select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel-alt);
-  color: var(--text);
-  font-size: 15px;
-  margin-top: 6px;
-}
-.card input[type="date"] { color-scheme: dark; }
-.card select option { background: var(--panel-alt); color: var(--text); }
-.card input[type="file"] {
-  width: 100%;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px dashed var(--border);
-  background: var(--panel-alt);
-  color: var(--text-dim);
-  font-size: 13px;
-  margin-top: 6px;
-}
-.card input[type="file"]::file-selector-button {
-  background: var(--purple-glow);
-  color: var(--lavender);
-  border: 1px solid var(--purple);
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin-right: 10px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.row { display: flex; gap: 10px; margin: 14px 0; flex-wrap: nowrap; align-items: flex-start; }
-.manual-entry.row { margin-top: 10px; align-items: stretch; }
-/* Direct-child inputs/selects/buttons in a row stretch evenly (Check Stocks
-   uses this pattern directly; Enhanced Item + Scan button uses it too). */
-.row > input, .row > select, .row > .combo { flex: 1; margin-top: 0 !important; }
-.row > .scan-item-btn { flex: 0 0 auto; }
-/* Label-wrapped inputs (Unit Price / QTY, LOB / Completed) need the LABEL
-   itself to be the flex item, with its own vertical stack inside. */
-.row > label.field { flex: 1; margin: 0; }
-
-.field { display: flex; flex-direction: column; gap: 0; font-size: 13px; color: var(--text-dim); margin-top: 14px; }
-.field:first-child { margin-top: 0; }
-.field-error {
-  margin-top: 6px;
-  font-size: 12.5px;
-  color: var(--danger);
-}
-.field-error.hidden { display: none; }
-.hint { color: var(--text-dim); font-weight: 400; }
+.row { display: flex; gap: 10px; margin: 0 0 14px 0; align-items: flex-start; }
+.row .field { flex: 1; margin-bottom: 0; }
+.row > input, .row > select { flex: 1; }
+.manual-entry.row { margin-top: 10px; }
+.scan-item-btn { flex: 0 0 auto; align-self: flex-end; }
 
 .scanner-box {
   width: 100%;
@@ -190,68 +177,28 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
 }
 
 .line-entry {
-  margin-top: 14px;
+  margin-top: 6px;
   padding: 14px;
   border: 1px dashed var(--border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-}
-.line-entry > .btn { margin-top: 16px; }
-
-/* ---- Type-to-search combobox ---- */
-.combo { position: relative; }
-.combo-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  max-height: 220px;
-  overflow-y: auto;
-  background: var(--panel-alt);
-  border: 1px solid var(--purple);
-  border-radius: 10px;
-  z-index: 25;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-.combo-list.hidden { display: none; }
-.combo-option {
-  padding: 10px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-}
-.combo-option:last-child { border-bottom: none; }
-.combo-option:hover, .combo-option.active {
-  background: var(--purple-glow);
-  color: var(--lavender);
-}
-.combo-empty { padding: 10px 12px; color: var(--text-dim); font-size: 13px; }
-
-/* ---- Photo upload preview ---- */
-.photo-preview { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
-.photo-preview.hidden { display: none; }
-.photo-preview img {
-  width: 64px; height: 64px;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.photo-preview .remove-photo {
-  background: transparent;
-  border: none;
-  color: var(--danger);
-  cursor: pointer;
-  font-size: 13px;
-  text-decoration: underline;
+  gap: 0;
 }
 
-/* ---- Pending items table ---- */
 .pending-list { margin-top: 20px; }
-.pending-list h3 { color: var(--lavender); font-size: 15px; margin-bottom: 8px; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; }
-.line-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+.pending-list h3 { color: var(--lavender); font-size: 15px; margin-bottom: 10px; }
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+.line-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
 .line-table th, .line-table td {
   padding: 10px 8px;
   border-bottom: 1px solid var(--border);
@@ -260,14 +207,12 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   white-space: nowrap;
 }
 .line-table th {
-  color: var(--text-dim);
+  color: var(--lavender);
   font-weight: 600;
   background: var(--panel-alt);
 }
-.line-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
 .line-table tbody tr:last-child td { border-bottom: none; }
-.line-table .thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; display: block; }
-.line-table .no-photo { color: var(--text-dim); }
+.line-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
 .remove-line {
   background: transparent;
   border: none;
@@ -292,18 +237,6 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
 .msg { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 14px; }
 .msg.success { background: rgba(155,230,177,0.1); color: var(--success); border: 1px solid var(--success); }
 .msg.error { background: rgba(255,138,138,0.1); color: var(--danger); border: 1px solid var(--danger); }
-.recap-list { margin: 8px 0 0; padding-left: 18px; color: var(--text); font-size: 13px; }
-.recap-list li { margin-bottom: 2px; }
-.recap-warning { margin-top: 8px; color: var(--danger); font-size: 13px; }
-.recap-link {
-  display: inline-block;
-  margin-top: 10px;
-  color: var(--lavender);
-  font-weight: 600;
-  text-decoration: none;
-  border-bottom: 1px solid var(--lavender);
-}
-.recap-link:hover { color: var(--purple); border-color: var(--purple); }
 .spinner {
   display: inline-block; width: 14px; height: 14px;
   border: 2px solid var(--border); border-top-color: var(--lavender);
