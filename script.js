@@ -155,10 +155,16 @@ async function lookupItem(code) {
 
 async function loadRequestorOptions() {
   const sel = document.getElementById('issuance-requestor');
+  const errBox = document.getElementById('requestor-load-error');
   if (!sel) return;
   try {
     const options = await apiGet('getRequestorOptions');
-    if (options.error) { console.error(options.error); return; }
+    if (options.error) {
+      errBox.textContent = options.error;
+      errBox.classList.remove('hidden');
+      return;
+    }
+    errBox.classList.add('hidden');
     sel.innerHTML = '<option value="">Select requestor</option>';
     options.forEach(function (name) {
       const opt = document.createElement('option');
@@ -167,7 +173,8 @@ async function loadRequestorOptions() {
       sel.appendChild(opt);
     });
   } catch (err) {
-    console.error(err);
+    errBox.textContent = 'Could not load Requestor options: ' + (err.message || err);
+    errBox.classList.remove('hidden');
   }
 }
 
