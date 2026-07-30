@@ -15,15 +15,18 @@
     </header>
 
     <nav id="sideMenu" class="side-menu">
-      <button class="menu-item active" data-view="checkStocks">Check Stocks</button>
+      <button class="menu-item" data-view="checkStocks">Check Stocks</button>
       <button class="menu-item" data-view="receiving">Receiving</button>
       <button class="menu-item" data-view="issuance">Issuance</button>
     </nav>
     <div id="overlay" class="overlay"></div>
 
+    <!-- Shared list of items, used by the type-to-search fields in Receiving/Issuance -->
+    <datalist id="itemsDatalist"></datalist>
+
     <main id="content">
-      <!-- Check Stocks (untouched) -->
-      <section id="view-checkStocks" class="view active">
+      <!-- Check Stocks -->
+      <section id="view-checkStocks" class="view">
         <div class="card">
           <h2>Check Stocks</h2>
           <div class="row">
@@ -41,46 +44,47 @@
       <section id="view-receiving" class="view">
         <div class="card">
           <h2>Receiving</h2>
-          <label class="field">Issued/Received Date <span class="hint">(applies to every item below)</span>
+
+          <div class="field">
+            <label for="receiving-date">Issued/Received Date <span class="hint">(applies to every item below)</span></label>
             <input type="date" id="receiving-date" required />
-          </label>
+          </div>
+
+          <div class="field">
+            <label for="receiving-attachment">Attachment <span class="hint">(optional — photo/receipt)</span></label>
+            <input type="file" id="receiving-attachment" accept="image/*,.pdf" />
+          </div>
 
           <div class="line-entry">
-            <label class="field">Enhanced Item
+            <div class="field">
+              <label for="receiving-item">Enhanced Item</label>
               <div class="row">
-                <div class="combo" id="receiving-item-combo">
-                  <input type="text" class="combo-input" id="receiving-item-input" placeholder="Type to search item..." autocomplete="off" />
-                  <input type="hidden" id="receiving-item-value" />
-                  <div class="combo-list hidden" id="receiving-item-list"></div>
-                </div>
+                <input type="text" id="receiving-item" class="item-select" list="itemsDatalist" placeholder="Type to search item..." autocomplete="off" />
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="receiving-item">Scan</button>
               </div>
-              <div id="receiving-item-error" class="field-error hidden"></div>
-            </label>
-            <div class="row">
-              <label class="field">Unit Price<input type="number" id="receiving-unitPrice" step="0.01" min="0" /></label>
-              <label class="field">QTY<input type="number" id="receiving-qty" step="1" min="1" /></label>
             </div>
             <div class="row">
-              <label class="field">LOB
+              <div class="field"><label for="receiving-unitPrice">Unit Price</label><input type="number" id="receiving-unitPrice" step="0.01" min="0" /></div>
+              <div class="field"><label for="receiving-qty">QTY</label><input type="number" id="receiving-qty" step="1" min="1" /></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="receiving-lob">LOB</label>
                 <select id="receiving-lob">
                   <option value="">Select LOB</option>
                   <option value="ACP">ACP</option>
                   <option value="GCP">GCP</option>
                   <option value="SCP">SCP</option>
                 </select>
-              </label>
-              <label class="field">Completed
+              </div>
+              <div class="field">
+                <label for="receiving-completed">Completed</label>
                 <select id="receiving-completed">
                   <option value="YES">YES</option>
                   <option value="NO">NO</option>
                 </select>
-              </label>
+              </div>
             </div>
-            <label class="field">Photo <span class="hint">(optional)</span>
-              <input type="file" id="receiving-photo" accept="image/*" capture="environment" />
-            </label>
-            <div id="receiving-photo-preview" class="photo-preview hidden"></div>
             <button type="button" id="receiving-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
@@ -88,7 +92,7 @@
             <h3>Items to submit (<span id="receiving-count">0</span>)</h3>
             <div class="table-wrap">
               <table id="receiving-table" class="line-table">
-                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Photo</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -102,46 +106,52 @@
       <section id="view-issuance" class="view">
         <div class="card">
           <h2>Issuance</h2>
-          <label class="field">Issued/Received Date <span class="hint">(applies to every item below)</span>
+
+          <div class="field">
+            <label for="issuance-date">Issued/Received Date <span class="hint">(applies to every item below)</span></label>
             <input type="date" id="issuance-date" required />
-          </label>
+          </div>
+
+          <div class="field">
+            <label for="issuance-requestor">Requestor</label>
+            <input type="text" id="issuance-requestor" placeholder="Name of requestor" />
+          </div>
+
+          <div class="field">
+            <label for="issuance-attachment">Attachment <span class="hint">(optional — photo/receipt)</span></label>
+            <input type="file" id="issuance-attachment" accept="image/*,.pdf" />
+          </div>
 
           <div class="line-entry">
-            <label class="field">Enhanced Item
+            <div class="field">
+              <label for="issuance-item">Enhanced Item</label>
               <div class="row">
-                <div class="combo" id="issuance-item-combo">
-                  <input type="text" class="combo-input" id="issuance-item-input" placeholder="Type to search item..." autocomplete="off" />
-                  <input type="hidden" id="issuance-item-value" />
-                  <div class="combo-list hidden" id="issuance-item-list"></div>
-                </div>
+                <input type="text" id="issuance-item" class="item-select" list="itemsDatalist" placeholder="Type to search item..." autocomplete="off" />
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="issuance-item">Scan</button>
               </div>
-              <div id="issuance-item-error" class="field-error hidden"></div>
-            </label>
-            <div class="row">
-              <label class="field">Unit Price<input type="number" id="issuance-unitPrice" step="0.01" min="0" /></label>
-              <label class="field">QTY<input type="number" id="issuance-qty" step="1" min="1" /></label>
             </div>
             <div class="row">
-              <label class="field">LOB
+              <div class="field"><label for="issuance-unitPrice">Unit Price</label><input type="number" id="issuance-unitPrice" step="0.01" min="0" /></div>
+              <div class="field"><label for="issuance-qty">QTY</label><input type="number" id="issuance-qty" step="1" min="1" /></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="issuance-lob">LOB</label>
                 <select id="issuance-lob">
                   <option value="">Select LOB</option>
                   <option value="ACP">ACP</option>
                   <option value="GCP">GCP</option>
                   <option value="SCP">SCP</option>
                 </select>
-              </label>
-              <label class="field">Completed
+              </div>
+              <div class="field">
+                <label for="issuance-completed">Completed</label>
                 <select id="issuance-completed">
                   <option value="YES">YES</option>
                   <option value="NO">NO</option>
                 </select>
-              </label>
+              </div>
             </div>
-            <label class="field">Photo <span class="hint">(optional)</span>
-              <input type="file" id="issuance-photo" accept="image/*" capture="environment" />
-            </label>
-            <div id="issuance-photo-preview" class="photo-preview hidden"></div>
             <button type="button" id="issuance-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
@@ -149,7 +159,7 @@
             <h3>Items to submit (<span id="issuance-count">0</span>)</h3>
             <div class="table-wrap">
               <table id="issuance-table" class="line-table">
-                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Photo</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
