@@ -1,5 +1,6 @@
-// ⚠️ PASTE your deployed Apps Script Web App URL here (ends in /exec):
+// PASTE your deployed Apps Script Web App URL here (ends in /exec):
 const API_URL = 'https://script.google.com/macros/s/AKfycbxx448moFrOP0e5lYa9FBpzXiXdCgvyqT3xhYHhfuL-ecdJk8as7pSvFeZfmhvYGbQ-/exec';
+const LAST_VIEW_KEY = 'inventory_last_view';
 
 // ===================== API HELPERS =====================
 
@@ -30,17 +31,21 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// Local (not UTC) yyyy-mm-dd, so "today" is always today regardless of timezone.
-function todayISO() {
-  const d = new Date();
-  const tzOffsetMs = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+function fileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      const base64 = reader.result.split(',')[1];
+      resolve({ base64Data: base64, mimeType: file.type || 'application/octet-stream', fileName: file.name });
+    };
+    reader.onerror = function () { reject(new Error('Could not read the selected file.')); };
+    reader.readAsDataURL(file);
+  });
 }
 
 // ===================== MENU (with last-view persistence) =====================
 
 const views = ['checkStocks', 'receiving', 'issuance'];
-const LAST_VIEW_KEY = 'inventoryApp:lastView';
 const menuBtn = document.getElementById('menuBtn');
 const sideMenu = document.getElementById('sideMenu');
 const overlay = document.getElementById('overlay');
@@ -68,18 +73,10 @@ document.querySelectorAll('.menu-item').forEach(function (btn) {
   btn.addEventListener('click', function () {
     const target = btn.dataset.view;
     activateView(target);
-    try { localStorage.setItem(LAST_VIEW_KEY, target); } catch (e) { /* ignore storage errors */ }
+    localStorage.setItem(LAST_VIEW_KEY, target);
     closeMenu();
   });
 });
-
-// Restore whichever view was open before refresh (defaults to Check Stocks
-// the very first time, or if nothing was saved).
-(function restoreLastView() {
-  let saved = null;
-  try { saved = localStorage.getItem(LAST_VIEW_KEY); } catch (e) { /* ignore */ }
-  activateView(views.indexOf(saved) !== -1 ? saved : 'checkStocks');
-})();
 
 // ===================== SHARED SCANNER MODAL =====================
 
@@ -115,7 +112,7 @@ function closeScannerModal() {
 }
 document.getElementById('closeScanner').addEventListener('click', closeScannerModal);
 
-// ===================== CHECK STOCKS (untouched logic) =====================
+// ===================== CHECK STOCKS =====================
 
 document.getElementById('startScanCheck').addEventListener('click', function () {
   openScanner('Scan Item Code', lookupItem);
@@ -154,107 +151,52 @@ async function lookupItem(code) {
   }
 }
 
-// ===================== ITEM LIST (shared cache for both combos) =====================
+// ===================== ITEM LIST (type-to-search fields) =====================
 
-let itemListCache = [];
-let itemListError = null;
+let itemDisplayMap = {}; // "Name (Code)" -> raw Name, used to validate + resolve typed input
+
+function displayFor(name, code) {
+  return code ? (name + ' (' + code + ')') : name;
+}
 
 async function loadItemList() {
-  itemListError = null;
   try {
     const items = await apiGet('getItemList');
-    if (items.error) throw new Error(items.error);
-    itemListCache = items;
+    if (items.error) {
+      console.error(items.error);
+      return;
+    }
+    const datalist = document.getElementById('itemsDatalist');
+    datalist.innerHTML = '';
+    itemDisplayMap = {};
+    items.forEach(function (it) {
+      const display = displayFor(it.name, it.code);
+      itemDisplayMap[display] = it.name;
+      const opt = document.createElement('option');
+      opt.value = display;
+      datalist.appendChild(opt);
+    });
   } catch (err) {
-    itemListError = (err.message || String(err)) +
-      ' — check that your Apps Script is deployed as a NEW version after any code changes.';
-    itemListCache = [];
+    console.error(err);
   }
-  ['receiving', 'issuance'].forEach(function (prefix) {
-    const errBox = document.getElementById(prefix + '-item-error');
-    if (itemListError) {
-      errBox.textContent = itemListError;
-      errBox.classList.remove('hidden');
-    } else {
-      errBox.classList.add('hidden');
-    }
-  });
 }
 
-// ===================== TYPE-TO-SEARCH COMBOBOX =====================
-
-function setupCombo(prefix) {
-  const input = document.getElementById(prefix + '-item-input');
-  const hidden = document.getElementById(prefix + '-item-value');
-  const list = document.getElementById(prefix + '-item-list');
-
-  function render(filterText) {
-    const q = (filterText || '').trim().toLowerCase();
-    const matches = itemListCache.filter(function (it) {
-      if (!q) return true;
-      return it.name.toLowerCase().indexOf(q) !== -1 ||
-        (it.code && it.code.toLowerCase().indexOf(q) !== -1);
-    }).slice(0, 50);
-
-    list.innerHTML = '';
-    if (!itemListCache.length) {
-      list.innerHTML = '<div class="combo-empty">' +
-        (itemListError ? 'Items failed to load — see error above.' : 'Loading items...') +
-        '</div>';
-    } else if (!matches.length) {
-      list.innerHTML = '<div class="combo-empty">No matching items.</div>';
-    } else {
-      matches.forEach(function (it) {
-        const opt = document.createElement('div');
-        opt.className = 'combo-option';
-        opt.textContent = it.code ? (it.name + ' (' + it.code + ')') : it.name;
-        opt.addEventListener('mousedown', function (e) {
-          e.preventDefault(); // keep focus so 'blur' doesn't fire before click registers
-          selectComboItem(prefix, it.name);
-        });
-        list.appendChild(opt);
-      });
-    }
-    list.classList.remove('hidden');
-  }
-
-  input.addEventListener('focus', function () { render(input.value); });
-  input.addEventListener('input', function () {
-    hidden.value = ''; // typing invalidates any previously selected/scanned item
-    render(input.value);
-  });
-  input.addEventListener('blur', function () {
-    setTimeout(function () { list.classList.add('hidden'); }, 100);
-  });
-  input.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') list.classList.add('hidden');
-  });
-}
-
-function selectComboItem(prefix, itemName) {
-  document.getElementById(prefix + '-item-input').value = itemName;
-  document.getElementById(prefix + '-item-value').value = itemName;
-  document.getElementById(prefix + '-item-list').classList.add('hidden');
-}
-
-function clearCombo(prefix) {
-  document.getElementById(prefix + '-item-input').value = '';
-  document.getElementById(prefix + '-item-value').value = '';
-}
-
-// ===================== SCAN TO SELECT ITEM (Receiving / Issuance) =====================
+// ===================== SCAN TO FILL ITEM FIELD (Receiving / Issuance) =====================
 
 document.querySelectorAll('.scan-item-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
-    const targetPrefix = btn.dataset.target.split('-')[0]; // 'receiving' or 'issuance'
+    const targetId = btn.dataset.target;
     openScanner('Scan Item Barcode', function (code) {
-      selectItemByCode(targetPrefix, code);
+      selectItemByCode(targetId, code);
     });
   });
 });
 
-async function selectItemByCode(prefix, code) {
+async function selectItemByCode(inputId, code) {
+  const input = document.getElementById(inputId);
+  const prefix = inputId.split('-')[0]; // 'receiving' or 'issuance'
   const msg = document.getElementById('msg-' + prefix);
+
   msg.className = 'msg';
   msg.classList.remove('hidden');
   msg.innerHTML = '<span class="spinner"></span> Looking up "' + escapeHtml(code) + '"...';
@@ -266,9 +208,9 @@ async function selectItemByCode(prefix, code) {
       msg.textContent = res.error || res.message;
       return;
     }
-    const exists = itemListCache.some(function (it) { return it.name === res.item; });
-    if (exists) {
-      selectComboItem(prefix, res.item);
+    const display = displayFor(res.item, res.itemCode);
+    if (itemDisplayMap[display] !== undefined) {
+      input.value = display;
       msg.classList.add('hidden');
     } else {
       msg.className = 'msg error';
@@ -280,77 +222,11 @@ async function selectItemByCode(prefix, code) {
   }
 }
 
-// ===================== PHOTO UPLOAD (optional, per line) =====================
-// Downscales to a max of 1280px and re-encodes as JPEG so uploads stay small.
-
-function compressImageFile(file) {
-  return new Promise(function (resolve, reject) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const img = new Image();
-      img.onload = function () {
-        const maxDim = 1280;
-        let width = img.width, height = img.height;
-        if (width > maxDim || height > maxDim) {
-          const scale = maxDim / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.onerror = function () { reject(new Error('Could not read image.')); };
-      img.src = e.target.result;
-    };
-    reader.onerror = function () { reject(new Error('Could not read file.')); };
-    reader.readAsDataURL(file);
-  });
-}
-
-function setupPhotoInput(prefix) {
-  const fileInput = document.getElementById(prefix + '-photo');
-  const preview = document.getElementById(prefix + '-photo-preview');
-  let currentDataUrl = null;
-
-  fileInput.addEventListener('change', async function () {
-    const file = fileInput.files[0];
-    if (!file) return;
-    try {
-      currentDataUrl = await compressImageFile(file);
-      renderPreview();
-    } catch (err) {
-      alert(err.message || String(err));
-      resetPhoto();
-    }
-  });
-
-  function renderPreview() {
-    preview.classList.remove('hidden');
-    preview.innerHTML = '<img src="' + currentDataUrl + '" alt="Preview" />' +
-      '<button type="button" class="remove-photo">Remove</button>';
-    preview.querySelector('.remove-photo').addEventListener('click', resetPhoto);
-  }
-
-  function resetPhoto() {
-    currentDataUrl = null;
-    fileInput.value = '';
-    preview.classList.add('hidden');
-    preview.innerHTML = '';
-  }
-
-  return {
-    getDataUrl: function () { return currentDataUrl; },
-    reset: resetPhoto
-  };
-}
-
 // ===================== RECEIVING / ISSUANCE — BULK ADD & SUBMIT =====================
 
 function setupBulkForm(prefix, type) {
   const dateInput = document.getElementById(prefix + '-date');
+  const itemInput = document.getElementById(prefix + '-item');
   const priceInput = document.getElementById(prefix + '-unitPrice');
   const qtyInput = document.getElementById(prefix + '-qty');
   const lobSel = document.getElementById(prefix + '-lob');
@@ -360,25 +236,22 @@ function setupBulkForm(prefix, type) {
   const countEl = document.getElementById(prefix + '-count');
   const submitAllBtn = document.getElementById(prefix + '-submit-all');
   const msg = document.getElementById('msg-' + prefix);
-  const photo = setupPhotoInput(prefix);
+  const attachmentInput = document.getElementById(prefix + '-attachment');
+  const requestorInput = document.getElementById(prefix + '-requestor'); // only exists for issuance
 
   let pending = [];
-  dateInput.value = todayISO();
+  dateInput.value = new Date().toISOString().slice(0, 10);
 
   function render() {
     tableBody.innerHTML = '';
     pending.forEach(function (row, idx) {
       const tr = document.createElement('tr');
-      const photoCell = row.photoDataUrl
-        ? '<img class="thumb" src="' + row.photoDataUrl + '" alt="photo" />'
-        : '<span class="no-photo">&mdash;</span>';
       tr.innerHTML =
         '<td>' + escapeHtml(row.itemName) + '</td>' +
         '<td>' + escapeHtml(row.unitPrice) + '</td>' +
         '<td>' + escapeHtml(row.qty) + '</td>' +
         '<td>' + escapeHtml(row.lob) + '</td>' +
         '<td>' + escapeHtml(row.completed) + '</td>' +
-        '<td>' + photoCell + '</td>' +
         '<td><button type="button" class="remove-line" data-idx="' + idx + '">&#10005;</button></td>';
       tableBody.appendChild(tr);
     });
@@ -393,36 +266,32 @@ function setupBulkForm(prefix, type) {
   }
 
   addBtn.addEventListener('click', function () {
-    const itemName = document.getElementById(prefix + '-item-value').value;
-    if (!itemName) { alert('Select an item first (type to search, or tap Scan).'); return; }
+    const typed = itemInput.value.trim();
+    const resolvedName = itemDisplayMap[typed];
+    if (!resolvedName) { alert('Please pick an item from the suggestions (type a few letters and tap a match).'); return; }
     if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
     if (!lobSel.value) { alert('Select an LOB.'); return; }
 
-    const dataUrl = photo.getDataUrl();
     pending.push({
-      itemName: itemName,
+      itemName: resolvedName,
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
-      completed: completedSel.value,
-      photoDataUrl: dataUrl,
-      photoBase64: dataUrl ? dataUrl.split(',')[1] : null,
-      photoName: dataUrl ? (itemName.replace(/[^a-z0-9]/gi, '_') + '.jpg') : null,
-      photoType: dataUrl ? 'image/jpeg' : null
+      completed: completedSel.value
     });
     render();
 
     // Clear the item-specific fields so the next line starts fresh;
     // keep LOB/Completed since batches are often all the same.
-    clearCombo(prefix);
+    itemInput.value = '';
     priceInput.value = '';
     qtyInput.value = '';
-    photo.reset();
   });
 
   submitAllBtn.addEventListener('click', async function () {
     if (!pending.length) return;
     if (!dateInput.value) { alert('Pick a date.'); return; }
+    if (requestorInput && !requestorInput.value.trim()) { alert('Requestor is required.'); return; }
 
     submitAllBtn.disabled = true;
     msg.className = 'msg';
@@ -430,44 +299,23 @@ function setupBulkForm(prefix, type) {
     msg.innerHTML = '<span class="spinner"></span> Saving ' + pending.length + ' item(s)...';
 
     try {
-      const res = await apiPost('submitBulkTransactions', {
-        type: type,
-        date: dateInput.value,
-        rows: pending.map(function (r) {
-          return {
-            itemName: r.itemName,
-            unitPrice: r.unitPrice,
-            qty: r.qty,
-            lob: r.lob,
-            completed: r.completed,
-            imageBase64: r.photoBase64 || undefined,
-            imageName: r.photoName || undefined,
-            imageType: r.photoType || undefined
-          };
-        })
-      });
-      if (res.error) throw new Error(res.error);
-      msg.className = 'msg success';
+      const payload = { type: type, date: dateInput.value, rows: pending };
+      if (requestorInput) payload.requestor = requestorInput.value.trim();
+      if (attachmentInput && attachmentInput.files && attachmentInput.files[0]) {
+        payload.attachment = await fileToBase64(attachmentInput.files[0]);
+      }
 
-      // Recap exactly what was just written, plus a direct link to the
-      // Smartsheet sheet, so it's obvious the data actually landed somewhere.
-      const recapItems = pending.map(function (r) {
-        return '<li>' + escapeHtml(r.itemName) + ' &mdash; qty ' + escapeHtml(r.qty) +
-          ', ' + escapeHtml(r.lob) + ', ' + escapeHtml(dateInput.value) + '</li>';
-      }).join('');
-      let html = '<strong>' + res.count + ' ' + type.toLowerCase() + ' entr' +
-        (res.count === 1 ? 'y' : 'ies') + ' saved to Smartsheet:</strong>' +
-        '<ul class="recap-list">' + recapItems + '</ul>';
-      if (res.attachErrors && res.attachErrors.length) {
-        html += '<div class="recap-warning">Some photos failed to attach: ' + escapeHtml(res.attachErrors.join('; ')) + '</div>';
-      }
-      if (res.sheetUrl) {
-        html += '<a class="recap-link" href="' + escapeHtml(res.sheetUrl) + '" target="_blank" rel="noopener">Open this sheet in Smartsheet &#8599;</a>';
-      }
-      msg.innerHTML = html;
+      const res = await apiPost('submitBulkTransactions', payload);
+      if (res.error) throw new Error(res.error);
+
+      msg.className = 'msg success';
+      msg.textContent = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
+      if (res.attachmentWarning) msg.textContent += ' (' + res.attachmentWarning + ')';
 
       pending = [];
       render();
+      if (attachmentInput) attachmentInput.value = '';
+      if (requestorInput) requestorInput.value = '';
     } catch (err) {
       msg.className = 'msg error';
       msg.textContent = err.message || String(err);
@@ -481,8 +329,7 @@ function setupBulkForm(prefix, type) {
 // ===================== INIT =====================
 
 window.addEventListener('load', function () {
-  setupCombo('receiving');
-  setupCombo('issuance');
+  activateView(localStorage.getItem(LAST_VIEW_KEY) || 'checkStocks');
   loadItemList();
   setupBulkForm('receiving', 'Receiving');
   setupBulkForm('issuance', 'Issuance');
