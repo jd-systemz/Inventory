@@ -151,35 +151,6 @@ async function lookupItem(code) {
   }
 }
 
-// ===================== REQUESTOR OPTIONS (Issuance only, type-to-search) =====================
-
-let requestorOptions = []; // exact strings Smartsheet's Requestor column accepts
-
-async function loadRequestorOptions() {
-  const datalist = document.getElementById('requestorDatalist');
-  const errBox = document.getElementById('requestor-load-error');
-  if (!datalist) return;
-  try {
-    const options = await apiGet('getRequestorOptions');
-    if (options.error) {
-      errBox.textContent = options.error;
-      errBox.classList.remove('hidden');
-      return;
-    }
-    errBox.classList.add('hidden');
-    requestorOptions = options;
-    datalist.innerHTML = '';
-    options.forEach(function (name) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      datalist.appendChild(opt);
-    });
-  } catch (err) {
-    errBox.textContent = 'Could not load Requestor options: ' + (err.message || err);
-    errBox.classList.remove('hidden');
-  }
-}
-
 // ===================== SMARTSHEET LINKS ("where is this saved?") =====================
 
 async function loadSheetLinks() {
@@ -204,50 +175,142 @@ async function loadSheetLinks() {
   }
 }
 
-// ===================== ITEM LIST (type-to-search fields) =====================
+// ===================== GENERIC TYPE-TO-SEARCH COMBOBOX =====================
+// Renders its own suggestion list in a plain <div>, instead of relying on the
+// browser's native <datalist> popup (which is inconsistent/unreliable across
+// browsers — some never show it at all). Works the same everywhere.
+//
+// options passed to getOptions() are objects: { name, code } — code is
+// optional (used for Item; empty string for Requestor).
 
-let itemDisplayMap = {}; // "Name (Code)" -> raw Name, used to validate + resolve typed input
+const combos = {}; // key -> combo instance, e.g. combos['receiving-item']
 
-function displayFor(name, code) {
-  return code ? (name + ' (' + code + ')') : name;
+function setupCombo(key, getOptions, getErrorText) {
+  const input = document.getElementById(key + '-input');
+  const hidden = document.getElementById(key + '-value');
+  const list = document.getElementById(key + '-list');
+  if (!input || !hidden || !list) return null;
+
+  function render(filterText, forceShow) {
+    const q = (filterText || '').trim().toLowerCase();
+    const options = getOptions();
+    const matches = options.filter(function (o) {
+      if (!q) return true;
+      return o.name.toLowerCase().indexOf(q) !== -1 ||
+        (o.code && o.code.toLowerCase().indexOf(q) !== -1);
+    }).slice(0, 50);
+
+    list.innerHTML = '';
+    if (!options.length) {
+      list.innerHTML = '<div class="combo-empty">' + escapeHtml(getErrorText() || 'Loading...') + '</div>';
+    } else if (!matches.length) {
+      list.innerHTML = '<div class="combo-empty">No matching results.</div>';
+    } else {
+      matches.forEach(function (o) {
+        const label = o.code ? (o.name + ' (' + o.code + ')') : o.name;
+        const opt = document.createElement('div');
+        opt.className = 'combo-option';
+        opt.textContent = label;
+        opt.addEventListener('mousedown', function (e) {
+          e.preventDefault(); // keep focus so 'blur' doesn't hide the list before this fires
+          input.value = label;
+          hidden.value = o.name;
+          list.classList.add('hidden');
+        });
+        list.appendChild(opt);
+      });
+    }
+
+    const shouldShow = forceShow || document.activeElement === input;
+    list.classList.toggle('hidden', !shouldShow);
+  }
+
+  input.addEventListener('focus', function () { render(input.value, true); });
+  input.addEventListener('input', function () {
+    hidden.value = ''; // typing invalidates any previously selected/scanned value
+    render(input.value, true);
+  });
+  input.addEventListener('blur', function () {
+    setTimeout(function () { list.classList.add('hidden'); }, 120);
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') list.classList.add('hidden');
+  });
+
+  const instance = {
+    render: render,
+    setValue: function (name) {
+      const match = getOptions().filter(function (o) { return o.name === name; })[0];
+      input.value = match ? (match.code ? name + ' (' + match.code + ')' : name) : name;
+      hidden.value = name;
+      list.classList.add('hidden');
+    },
+    clear: function () {
+      input.value = '';
+      hidden.value = '';
+      list.classList.add('hidden');
+    },
+    refresh: function () { render(input.value, false); } // re-render without forcing it open
+  };
+  combos[key] = instance;
+  return instance;
 }
 
+// ===================== ITEM LIST (shared by Receiving + Issuance Item combos) =====================
+
+let itemOptions = [];   // [{ name, code }]
+let itemListError = null;
+
 async function loadItemList() {
+  itemListError = null;
   try {
     const items = await apiGet('getItemList');
-    if (items.error) {
-      console.error(items.error);
-      return;
-    }
-    const datalist = document.getElementById('itemsDatalist');
-    datalist.innerHTML = '';
-    itemDisplayMap = {};
-    items.forEach(function (it) {
-      const display = displayFor(it.name, it.code);
-      itemDisplayMap[display] = it.name;
-      const opt = document.createElement('option');
-      opt.value = display;
-      datalist.appendChild(opt);
-    });
+    if (items.error) throw new Error(items.error);
+    itemOptions = items;
   } catch (err) {
-    console.error(err);
+    itemListError = (err.message || String(err)) +
+      ' — check that your Apps Script is deployed as a NEW version after any code changes.';
+    itemOptions = [];
   }
+  if (combos['receiving-item']) combos['receiving-item'].refresh();
+  if (combos['issuance-item']) combos['issuance-item'].refresh();
+}
+
+// ===================== REQUESTOR OPTIONS (Issuance only) =====================
+
+let requestorOptions = []; // [{ name, code: '' }]
+let requestorListError = null;
+
+async function loadRequestorOptions() {
+  requestorListError = null;
+  const errBox = document.getElementById('requestor-load-error');
+  try {
+    const options = await apiGet('getRequestorOptions');
+    if (options.error) throw new Error(options.error);
+    requestorOptions = options.map(function (name) { return { name: name, code: '' }; });
+    errBox.classList.add('hidden');
+  } catch (err) {
+    requestorListError = err.message || String(err);
+    requestorOptions = [];
+    errBox.textContent = requestorListError;
+    errBox.classList.remove('hidden');
+  }
+  if (combos['issuance-requestor']) combos['issuance-requestor'].refresh();
 }
 
 // ===================== SCAN TO FILL ITEM FIELD (Receiving / Issuance) =====================
 
 document.querySelectorAll('.scan-item-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
-    const targetId = btn.dataset.target;
+    const key = btn.dataset.target; // 'receiving-item' or 'issuance-item'
     openScanner('Scan Item Barcode', function (code) {
-      selectItemByCode(targetId, code);
+      selectItemByCode(key, code);
     });
   });
 });
 
-async function selectItemByCode(inputId, code) {
-  const input = document.getElementById(inputId);
-  const prefix = inputId.split('-')[0]; // 'receiving' or 'issuance'
+async function selectItemByCode(key, code) {
+  const prefix = key.split('-')[0]; // 'receiving' or 'issuance'
   const msg = document.getElementById('msg-' + prefix);
 
   msg.className = 'msg';
@@ -261,9 +324,9 @@ async function selectItemByCode(inputId, code) {
       msg.textContent = res.error || res.message;
       return;
     }
-    const display = displayFor(res.item, res.itemCode);
-    if (itemDisplayMap[display] !== undefined) {
-      input.value = display;
+    const exists = itemOptions.some(function (o) { return o.name === res.item; });
+    if (exists) {
+      combos[key].setValue(res.item);
       msg.classList.add('hidden');
     } else {
       msg.className = 'msg error';
@@ -279,7 +342,6 @@ async function selectItemByCode(inputId, code) {
 
 function setupBulkForm(prefix, type) {
   const dateInput = document.getElementById(prefix + '-date');
-  const itemInput = document.getElementById(prefix + '-item');
   const priceInput = document.getElementById(prefix + '-unitPrice');
   const qtyInput = document.getElementById(prefix + '-qty');
   const lobSel = document.getElementById(prefix + '-lob');
@@ -290,7 +352,7 @@ function setupBulkForm(prefix, type) {
   const submitAllBtn = document.getElementById(prefix + '-submit-all');
   const msg = document.getElementById('msg-' + prefix);
   const attachmentInput = document.getElementById(prefix + '-attachment');
-  const requestorInput = document.getElementById(prefix + '-requestor'); // only exists for issuance
+  const requestorCombo = combos[prefix + '-requestor']; // only exists for issuance
 
   let pending = [];
   dateInput.value = new Date().toISOString().slice(0, 10);
@@ -319,14 +381,13 @@ function setupBulkForm(prefix, type) {
   }
 
   addBtn.addEventListener('click', function () {
-    const typed = itemInput.value.trim();
-    const resolvedName = itemDisplayMap[typed];
-    if (!resolvedName) { alert('Please pick an item from the suggestions (type a few letters and tap a match).'); return; }
+    const itemName = document.getElementById(prefix + '-item-value').value;
+    if (!itemName) { alert('Select an item first (type to search, or tap Scan).'); return; }
     if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
     if (!lobSel.value) { alert('Select an LOB.'); return; }
 
     pending.push({
-      itemName: resolvedName,
+      itemName: itemName,
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
@@ -336,7 +397,7 @@ function setupBulkForm(prefix, type) {
 
     // Clear the item-specific fields so the next line starts fresh;
     // keep LOB/Completed since batches are often all the same.
-    itemInput.value = '';
+    combos[prefix + '-item'].clear();
     priceInput.value = '';
     qtyInput.value = '';
   });
@@ -346,17 +407,12 @@ function setupBulkForm(prefix, type) {
     if (!dateInput.value) { alert('Pick a date.'); return; }
 
     let resolvedRequestor = null;
-    if (requestorInput) {
-      const typedRequestor = requestorInput.value.trim();
-      if (!typedRequestor) { alert('Requestor is required.'); return; }
-      const match = requestorOptions.filter(function (name) {
-        return name.toLowerCase() === typedRequestor.toLowerCase();
-      })[0];
-      if (requestorOptions.length && !match) {
+    if (requestorCombo) {
+      resolvedRequestor = document.getElementById(prefix + '-requestor-value').value;
+      if (!resolvedRequestor) {
         alert('Please pick a requestor from the suggestions (type a few letters and tap a match).');
         return;
       }
-      resolvedRequestor = match || typedRequestor;
     }
 
     submitAllBtn.disabled = true;
@@ -384,7 +440,7 @@ function setupBulkForm(prefix, type) {
       pending = [];
       render();
       if (attachmentInput) attachmentInput.value = '';
-      if (requestorInput) requestorInput.value = '';
+      if (requestorCombo) requestorCombo.clear();
     } catch (err) {
       msg.className = 'msg error';
       msg.textContent = err.message || String(err);
@@ -399,6 +455,11 @@ function setupBulkForm(prefix, type) {
 
 window.addEventListener('load', function () {
   activateView(localStorage.getItem(LAST_VIEW_KEY) || 'checkStocks');
+
+  setupCombo('receiving-item', function () { return itemOptions; }, function () { return itemListError; });
+  setupCombo('issuance-item', function () { return itemOptions; }, function () { return itemListError; });
+  setupCombo('issuance-requestor', function () { return requestorOptions; }, function () { return requestorListError; });
+
   loadItemList();
   loadSheetLinks();
   loadRequestorOptions();
