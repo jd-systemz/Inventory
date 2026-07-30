@@ -180,8 +180,40 @@ input::placeholder { color: var(--text-dim); opacity: 0.7; }
 .row { display: flex; gap: 10px; margin: 0 0 14px 0; align-items: flex-start; }
 .row .field { flex: 1; margin-bottom: 0; }
 .row > input, .row > select { flex: 1; }
+.row > .combo { flex: 1; }
 .manual-entry.row { margin-top: 10px; }
 .scan-item-btn { flex: 0 0 auto; align-self: flex-end; }
+
+/* ---- Custom type-to-search combobox (replaces native <datalist>, which has
+   unreliable/inconsistent suggestion-popup support across browsers) ---- */
+.combo { position: relative; }
+.combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--panel-alt);
+  border: 1px solid var(--purple);
+  border-radius: 10px;
+  z-index: 25;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.combo-list.hidden { display: none; }
+.combo-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.combo-option:last-child { border-bottom: none; }
+.combo-option:hover, .combo-option.active {
+  background: var(--purple-glow);
+  color: var(--lavender);
+}
+.combo-empty { padding: 10px 12px; color: var(--text-dim); font-size: 13px; }
 
 .scanner-box {
   width: 100%;
