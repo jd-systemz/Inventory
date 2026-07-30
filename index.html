@@ -21,8 +21,9 @@
     </nav>
     <div id="overlay" class="overlay"></div>
 
-    <!-- Shared list of items, used by the type-to-search fields in Receiving/Issuance -->
+    <!-- Shared lists used by the type-to-search fields in Receiving/Issuance -->
     <datalist id="itemsDatalist"></datalist>
+    <datalist id="requestorDatalist"></datalist>
 
     <main id="content">
       <!-- Check Stocks -->
@@ -117,9 +118,7 @@
 
           <div class="field">
             <label for="issuance-requestor">Requestor</label>
-            <select id="issuance-requestor">
-              <option value="">Select requestor</option>
-            </select>
+            <input type="text" id="issuance-requestor" list="requestorDatalist" placeholder="Type to search requestor..." autocomplete="off" />
             <div id="requestor-load-error" class="msg error hidden"></div>
           </div>
 
