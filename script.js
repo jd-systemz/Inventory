@@ -151,12 +151,14 @@ async function lookupItem(code) {
   }
 }
 
-// ===================== REQUESTOR OPTIONS (Issuance only) =====================
+// ===================== REQUESTOR OPTIONS (Issuance only, type-to-search) =====================
+
+let requestorOptions = []; // exact strings Smartsheet's Requestor column accepts
 
 async function loadRequestorOptions() {
-  const sel = document.getElementById('issuance-requestor');
+  const datalist = document.getElementById('requestorDatalist');
   const errBox = document.getElementById('requestor-load-error');
-  if (!sel) return;
+  if (!datalist) return;
   try {
     const options = await apiGet('getRequestorOptions');
     if (options.error) {
@@ -165,12 +167,12 @@ async function loadRequestorOptions() {
       return;
     }
     errBox.classList.add('hidden');
-    sel.innerHTML = '<option value="">Select requestor</option>';
+    requestorOptions = options;
+    datalist.innerHTML = '';
     options.forEach(function (name) {
       const opt = document.createElement('option');
       opt.value = name;
-      opt.textContent = name;
-      sel.appendChild(opt);
+      datalist.appendChild(opt);
     });
   } catch (err) {
     errBox.textContent = 'Could not load Requestor options: ' + (err.message || err);
@@ -342,7 +344,20 @@ function setupBulkForm(prefix, type) {
   submitAllBtn.addEventListener('click', async function () {
     if (!pending.length) return;
     if (!dateInput.value) { alert('Pick a date.'); return; }
-    if (requestorInput && !requestorInput.value.trim()) { alert('Requestor is required.'); return; }
+
+    let resolvedRequestor = null;
+    if (requestorInput) {
+      const typedRequestor = requestorInput.value.trim();
+      if (!typedRequestor) { alert('Requestor is required.'); return; }
+      const match = requestorOptions.filter(function (name) {
+        return name.toLowerCase() === typedRequestor.toLowerCase();
+      })[0];
+      if (requestorOptions.length && !match) {
+        alert('Please pick a requestor from the suggestions (type a few letters and tap a match).');
+        return;
+      }
+      resolvedRequestor = match || typedRequestor;
+    }
 
     submitAllBtn.disabled = true;
     msg.className = 'msg';
@@ -351,7 +366,7 @@ function setupBulkForm(prefix, type) {
 
     try {
       const payload = { type: type, date: dateInput.value, rows: pending };
-      if (requestorInput) payload.requestor = requestorInput.value.trim();
+      if (resolvedRequestor) payload.requestor = resolvedRequestor;
       if (attachmentInput && attachmentInput.files && attachmentInput.files[0]) {
         payload.attachment = await fileToBase64(attachmentInput.files[0]);
       }
