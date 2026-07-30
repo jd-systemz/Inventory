@@ -21,10 +21,6 @@
     </nav>
     <div id="overlay" class="overlay"></div>
 
-    <!-- Shared lists used by the type-to-search fields in Receiving/Issuance -->
-    <datalist id="itemsDatalist"></datalist>
-    <datalist id="requestorDatalist"></datalist>
-
     <main id="content">
       <!-- Check Stocks -->
       <section id="view-checkStocks" class="view">
@@ -60,9 +56,13 @@
 
           <div class="line-entry">
             <div class="field">
-              <label for="receiving-item">Enhanced Item</label>
+              <label for="receiving-item-input">Enhanced Item</label>
               <div class="row">
-                <input type="text" id="receiving-item" class="item-select" list="itemsDatalist" placeholder="Type to search item..." autocomplete="off" />
+                <div class="combo" id="receiving-item-combo">
+                  <input type="text" id="receiving-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" />
+                  <input type="hidden" id="receiving-item-value" />
+                  <div class="combo-list hidden" id="receiving-item-list"></div>
+                </div>
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="receiving-item">Scan</button>
               </div>
             </div>
@@ -117,8 +117,12 @@
           </div>
 
           <div class="field">
-            <label for="issuance-requestor">Requestor</label>
-            <input type="text" id="issuance-requestor" list="requestorDatalist" placeholder="Type to search requestor..." autocomplete="off" />
+            <label for="issuance-requestor-input">Requestor</label>
+            <div class="combo" id="issuance-requestor-combo">
+              <input type="text" id="issuance-requestor-input" class="combo-input" placeholder="Type to search requestor..." autocomplete="off" />
+              <input type="hidden" id="issuance-requestor-value" />
+              <div class="combo-list hidden" id="issuance-requestor-list"></div>
+            </div>
             <div id="requestor-load-error" class="msg error hidden"></div>
           </div>
 
@@ -129,9 +133,13 @@
 
           <div class="line-entry">
             <div class="field">
-              <label for="issuance-item">Enhanced Item</label>
+              <label for="issuance-item-input">Enhanced Item</label>
               <div class="row">
-                <input type="text" id="issuance-item" class="item-select" list="itemsDatalist" placeholder="Type to search item..." autocomplete="off" />
+                <div class="combo" id="issuance-item-combo">
+                  <input type="text" id="issuance-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" />
+                  <input type="hidden" id="issuance-item-value" />
+                  <div class="combo-list hidden" id="issuance-item-list"></div>
+                </div>
                 <button type="button" class="btn btn-ghost scan-item-btn" data-target="issuance-item">Scan</button>
               </div>
             </div>
