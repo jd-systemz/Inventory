@@ -151,6 +151,50 @@ async function lookupItem(code) {
   }
 }
 
+// ===================== REQUESTOR OPTIONS (Issuance only) =====================
+
+async function loadRequestorOptions() {
+  const sel = document.getElementById('issuance-requestor');
+  if (!sel) return;
+  try {
+    const options = await apiGet('getRequestorOptions');
+    if (options.error) { console.error(options.error); return; }
+    sel.innerHTML = '<option value="">Select requestor</option>';
+    options.forEach(function (name) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ===================== SMARTSHEET LINKS ("where is this saved?") =====================
+
+async function loadSheetLinks() {
+  try {
+    const links = await apiGet('getSheetLinks');
+    if (links.error) { console.error(links.error); return; }
+    const checkLink = document.getElementById('checkstocks-sheet-link');
+    const recvLink = document.getElementById('receiving-sheet-link');
+    const issLink = document.getElementById('issuance-sheet-link');
+    if (links.sourceSheetUrl) {
+      checkLink.href = links.sourceSheetUrl;
+      checkLink.classList.remove('hidden');
+    }
+    if (links.transactionsSheetUrl) {
+      recvLink.href = links.transactionsSheetUrl;
+      recvLink.classList.remove('hidden');
+      issLink.href = links.transactionsSheetUrl;
+      issLink.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 // ===================== ITEM LIST (type-to-search fields) =====================
 
 let itemDisplayMap = {}; // "Name (Code)" -> raw Name, used to validate + resolve typed input
@@ -309,8 +353,11 @@ function setupBulkForm(prefix, type) {
       if (res.error) throw new Error(res.error);
 
       msg.className = 'msg success';
-      msg.textContent = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
-      if (res.attachmentWarning) msg.textContent += ' (' + res.attachmentWarning + ')';
+      msg.innerHTML = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
+      if (res.sheetUrl) {
+        msg.innerHTML += ' <a href="' + res.sheetUrl + '" target="_blank" rel="noopener" class="sheet-link-inline">View in Smartsheet &#8599;</a>';
+      }
+      if (res.attachmentWarning) msg.innerHTML += '<br>' + escapeHtml(res.attachmentWarning);
 
       pending = [];
       render();
@@ -331,6 +378,8 @@ function setupBulkForm(prefix, type) {
 window.addEventListener('load', function () {
   activateView(localStorage.getItem(LAST_VIEW_KEY) || 'checkStocks');
   loadItemList();
+  loadSheetLinks();
+  loadRequestorOptions();
   setupBulkForm('receiving', 'Receiving');
   setupBulkForm('issuance', 'Issuance');
 });
