@@ -29,6 +29,7 @@
       <section id="view-checkStocks" class="view">
         <div class="card">
           <h2>Check Stocks</h2>
+          <a id="checkstocks-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
           <div class="row">
             <button id="startScanCheck" class="btn btn-primary">Scan Item</button>
           </div>
@@ -44,6 +45,7 @@
       <section id="view-receiving" class="view">
         <div class="card">
           <h2>Receiving</h2>
+          <a id="receiving-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open transactions sheet in Smartsheet &#8599;</a>
 
           <div class="field">
             <label for="receiving-date">Issued/Received Date <span class="hint">(applies to every item below)</span></label>
@@ -106,6 +108,7 @@
       <section id="view-issuance" class="view">
         <div class="card">
           <h2>Issuance</h2>
+          <a id="issuance-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open transactions sheet in Smartsheet &#8599;</a>
 
           <div class="field">
             <label for="issuance-date">Issued/Received Date <span class="hint">(applies to every item below)</span></label>
@@ -114,7 +117,9 @@
 
           <div class="field">
             <label for="issuance-requestor">Requestor</label>
-            <input type="text" id="issuance-requestor" placeholder="Name of requestor" />
+            <select id="issuance-requestor">
+              <option value="">Select requestor</option>
+            </select>
           </div>
 
           <div class="field">
