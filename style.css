@@ -102,6 +102,21 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   color: var(--lavender);
   font-size: 20px;
 }
+.sheet-link {
+  display: inline-block;
+  color: var(--lavender);
+  font-size: 12.5px;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--lavender);
+  margin: -8px 0 16px 0;
+}
+.sheet-link:hover { color: var(--text); }
+.sheet-link.hidden { display: none; }
+.sheet-link-inline {
+  color: var(--success);
+  text-decoration: underline;
+  font-weight: 600;
+}
 
 /* ---- Universal form field styling (covers every input/select in the app) ---- */
 .field { margin-bottom: 14px; }
@@ -270,3 +285,33 @@ input::placeholder { color: var(--text-dim); opacity: 0.7; }
   margin-bottom: 12px;
 }
 .modal-header h3 { margin: 0; color: var(--lavender); font-size: 16px; }
+
+/* ---- Desktop layout: permanent sidebar instead of a hamburger overlay ---- */
+@media (min-width: 900px) {
+  #app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidemenu main";
+    min-height: 100vh;
+  }
+  .topbar { grid-area: topbar; }
+  #menuBtn { display: none; }
+  .side-menu {
+    grid-area: sidemenu;
+    position: static;
+    transform: none;
+    height: auto;
+    padding-top: 24px;
+    border-right: 1px solid var(--border);
+  }
+  .overlay { display: none !important; }
+  main {
+    grid-area: main;
+    max-width: 760px;
+    margin: 0;
+    padding: 32px 40px;
+  }
+}
