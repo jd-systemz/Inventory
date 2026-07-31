@@ -432,6 +432,10 @@ function setupBulkForm(prefix, type) {
 
       msg.className = 'msg success';
       msg.innerHTML = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
+      if (res.rowNumbers && res.rowNumbers.length) {
+        msg.innerHTML += ' Look for row' + (res.rowNumbers.length === 1 ? ' ' : 's ') +
+          '<strong>' + res.rowNumbers.join(', ') + '</strong> in Smartsheet.';
+      }
       if (res.sheetUrl) {
         msg.innerHTML += ' <a href="' + res.sheetUrl + '" target="_blank" rel="noopener" class="sheet-link-inline">View in Smartsheet &#8599;</a>';
       }
