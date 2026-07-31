@@ -117,6 +117,8 @@ main { padding: 18px; max-width: 640px; margin: 0 auto; }
   text-decoration: underline;
   font-weight: 600;
 }
+.row-links { margin-top: 6px; }
+.row-links .sheet-link-inline { margin-right: 12px; }
 
 /* ---- Universal form field styling (covers every input/select in the app) ---- */
 .field { margin-bottom: 14px; }
