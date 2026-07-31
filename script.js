@@ -432,7 +432,13 @@ function setupBulkForm(prefix, type) {
 
       msg.className = 'msg success';
       msg.innerHTML = res.count + ' ' + type.toLowerCase() + ' entr' + (res.count === 1 ? 'y' : 'ies') + ' added successfully.';
-      if (res.rowNumbers && res.rowNumbers.length) {
+      if (res.rowLinks && res.rowLinks.length) {
+        msg.innerHTML += '<div class="row-links">Jump straight to the new row: ' +
+          res.rowLinks.map(function (link, i) {
+            return '<a href="' + link + '" target="_blank" rel="noopener" class="sheet-link-inline">Open row ' +
+              (res.rowNumbers[i] || i + 1) + ' &#8599;</a>';
+          }).join(' ') + '</div>';
+      } else if (res.rowNumbers && res.rowNumbers.length) {
         msg.innerHTML += ' Look for row' + (res.rowNumbers.length === 1 ? ' ' : 's ') +
           '<strong>' + res.rowNumbers.join(', ') + '</strong> in Smartsheet.';
       }
