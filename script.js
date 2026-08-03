@@ -343,7 +343,8 @@ async function selectItemByCode(key, code) {
 
 function setupBulkForm(prefix, type) {
   const dateInput = document.getElementById(prefix + '-date');
-  const priceInput = document.getElementById(prefix + '-unitPrice');
+  const mrfInput = document.getElementById(prefix + '-mrf');           // optional — not required
+  const priceInput = document.getElementById(prefix + '-unitPrice');   // optional — not required
   const qtyInput = document.getElementById(prefix + '-qty');
   const lobSel = document.getElementById(prefix + '-lob');
   const completedSel = document.getElementById(prefix + '-completed');
@@ -364,6 +365,7 @@ function setupBulkForm(prefix, type) {
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(row.itemName) + '</td>' +
+        '<td>' + escapeHtml(row.mrf || '') + '</td>' +
         '<td>' + escapeHtml(row.unitPrice) + '</td>' +
         '<td>' + escapeHtml(row.qty) + '</td>' +
         '<td>' + escapeHtml(row.lob) + '</td>' +
@@ -386,12 +388,14 @@ function setupBulkForm(prefix, type) {
     if (!itemCode) { alert('Select an item first (type to search, or tap Scan).'); return; }
     if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
     if (!lobSel.value) { alert('Select an LOB.'); return; }
+    // Note: MRF# and Unit Price are intentionally NOT validated here — both are optional.
 
     const match = itemOptions.filter(function (o) { return o.code === itemCode; })[0];
 
     pending.push({
       itemCode: itemCode,
       itemName: match ? match.name : itemCode,
+      mrf: mrfInput.value.trim(),
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
@@ -402,6 +406,7 @@ function setupBulkForm(prefix, type) {
     // Clear the item-specific fields so the next line starts fresh;
     // keep LOB/Completed since batches are often all the same.
     combos[prefix + '-item'].clear();
+    mrfInput.value = '';
     priceInput.value = '';
     qtyInput.value = '';
   });
