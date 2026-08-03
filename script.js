@@ -177,15 +177,15 @@ async function loadSheetLinks() {
 
 // ===================== GENERIC TYPE-TO-SEARCH COMBOBOX =====================
 // Renders its own suggestion list in a plain <div>, instead of relying on the
-// browser's native <datalist> popup (which is inconsistent/unreliable across
-// browsers — some never show it at all). Works the same everywhere.
+// browser's native <datalist> popup (inconsistent across browsers).
 //
-// options passed to getOptions() are objects: { name, code } — code is
-// optional (used for Item; empty string for Requestor).
+// getOptionValue(o) decides what the "real" submitted value is for a given
+// option: for the Item combos that's the Item Code; for Requestor it's the
+// name itself (there's no separate code).
 
 const combos = {}; // key -> combo instance, e.g. combos['receiving-item']
 
-function setupCombo(key, getOptions, getErrorText) {
+function setupCombo(key, getOptions, getErrorText, getOptionValue) {
   const input = document.getElementById(key + '-input');
   const hidden = document.getElementById(key + '-value');
   const list = document.getElementById(key + '-list');
@@ -214,7 +214,7 @@ function setupCombo(key, getOptions, getErrorText) {
         opt.addEventListener('mousedown', function (e) {
           e.preventDefault(); // keep focus so 'blur' doesn't hide the list before this fires
           input.value = label;
-          hidden.value = o.name;
+          hidden.value = getOptionValue(o);
           list.classList.add('hidden');
         });
         list.appendChild(opt);
@@ -239,10 +239,10 @@ function setupCombo(key, getOptions, getErrorText) {
 
   const instance = {
     render: render,
-    setValue: function (name) {
-      const match = getOptions().filter(function (o) { return o.name === name; })[0];
-      input.value = match ? (match.code ? name + ' (' + match.code + ')' : name) : name;
-      hidden.value = name;
+    setValue: function (value) {
+      const match = getOptions().filter(function (o) { return getOptionValue(o) === value; })[0];
+      input.value = match ? (match.code ? match.name + ' (' + match.code + ')' : match.name) : value;
+      hidden.value = value;
       list.classList.add('hidden');
     },
     clear: function () {
@@ -257,6 +257,7 @@ function setupCombo(key, getOptions, getErrorText) {
 }
 
 // ===================== ITEM LIST (shared by Receiving + Issuance Item combos) =====================
+// Item Code is the real submitted value; Item name is shown for readability.
 
 let itemOptions = [];   // [{ name, code }]
 let itemListError = null;
@@ -324,9 +325,9 @@ async function selectItemByCode(key, code) {
       msg.textContent = res.error || res.message;
       return;
     }
-    const exists = itemOptions.some(function (o) { return o.name === res.item; });
+    const exists = itemOptions.some(function (o) { return o.code === res.itemCode; });
     if (exists) {
-      combos[key].setValue(res.item);
+      combos[key].setValue(res.itemCode);
       msg.classList.add('hidden');
     } else {
       msg.className = 'msg error';
@@ -381,13 +382,16 @@ function setupBulkForm(prefix, type) {
   }
 
   addBtn.addEventListener('click', function () {
-    const itemName = document.getElementById(prefix + '-item-value').value;
-    if (!itemName) { alert('Select an item first (type to search, or tap Scan).'); return; }
+    const itemCode = document.getElementById(prefix + '-item-value').value;
+    if (!itemCode) { alert('Select an item first (type to search, or tap Scan).'); return; }
     if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
     if (!lobSel.value) { alert('Select an LOB.'); return; }
 
+    const match = itemOptions.filter(function (o) { return o.code === itemCode; })[0];
+
     pending.push({
-      itemName: itemName,
+      itemCode: itemCode,
+      itemName: match ? match.name : itemCode,
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
@@ -466,9 +470,9 @@ function setupBulkForm(prefix, type) {
 window.addEventListener('load', function () {
   activateView(localStorage.getItem(LAST_VIEW_KEY) || 'checkStocks');
 
-  setupCombo('receiving-item', function () { return itemOptions; }, function () { return itemListError; });
-  setupCombo('issuance-item', function () { return itemOptions; }, function () { return itemListError; });
-  setupCombo('issuance-requestor', function () { return requestorOptions; }, function () { return requestorListError; });
+  setupCombo('receiving-item', function () { return itemOptions; }, function () { return itemListError; }, function (o) { return o.code; });
+  setupCombo('issuance-item', function () { return itemOptions; }, function () { return itemListError; }, function (o) { return o.code; });
+  setupCombo('issuance-requestor', function () { return requestorOptions; }, function () { return requestorListError; }, function (o) { return o.name; });
 
   loadItemList();
   loadSheetLinks();
