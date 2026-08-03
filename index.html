@@ -16,6 +16,7 @@
 
     <nav id="sideMenu" class="side-menu">
       <button class="menu-item" data-view="checkStocks">Check Stocks</button>
+      <button class="menu-item" data-view="correctStocks">Correct Stocks</button>
       <button class="menu-item" data-view="receiving">Receiving</button>
       <button class="menu-item" data-view="issuance">Issuance</button>
     </nav>
@@ -35,6 +36,29 @@
             <button id="manualCodeGo" class="btn btn-ghost">Enter</button>
           </div>
           <div id="stockResult" class="result-card hidden"></div>
+        </div>
+      </section>
+
+      <!-- Correct Stocks -->
+      <section id="view-correctStocks" class="view">
+        <div class="card">
+          <h2>Correct Stocks</h2>
+          <a id="correctstocks-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
+          <div class="row">
+            <button id="startScanCorrect" class="btn btn-primary">Scan Item</button>
+          </div>
+          <div class="manual-entry row">
+            <input id="correctManualCode" type="text" placeholder="Or type / scan Item Code" />
+            <button id="correctManualCodeGo" class="btn btn-ghost">Enter</button>
+          </div>
+          <div id="correctResult" class="result-card hidden"></div>
+
+          <div class="field hidden" id="correctInputWrap" style="margin-top:16px;">
+            <label for="correctActualStock">Actual Stock on Hand <span class="hint">(what you physically counted)</span></label>
+            <input type="number" id="correctActualStock" step="1" min="0" />
+            <button type="button" id="correctSubmit" class="btn btn-primary" style="margin-top:10px; width:100%;">Save Correction</button>
+          </div>
+          <div id="msg-correctStocks" class="msg hidden"></div>
         </div>
       </section>
 
