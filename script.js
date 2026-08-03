@@ -409,11 +409,9 @@ function setupBulkForm(prefix, type) {
     render();
 
     // Clear the item-specific fields so the next line starts fresh;
-    // keep LOB/Completed since batches are often all the same.
+    // keep MRF# / Project Name / SO# / LOB / Completed since a whole batch
+    // is usually encoded under the same MRF#, project, and SO#.
     combos[prefix + '-item'].clear();
-    mrfInput.value = '';
-    projectNameInput.value = '';
-    soNumberInput.value = '';
     priceInput.value = '';
     qtyInput.value = '';
   });
