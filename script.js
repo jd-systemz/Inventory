@@ -45,7 +45,7 @@ function fileToBase64(file) {
 
 // ===================== MENU (with last-view persistence) =====================
 
-const views = ['checkStocks', 'receiving', 'issuance'];
+const views = ['checkStocks', 'correctStocks', 'receiving', 'issuance'];
 const menuBtn = document.getElementById('menuBtn');
 const sideMenu = document.getElementById('sideMenu');
 const overlay = document.getElementById('overlay');
@@ -151,6 +151,94 @@ async function lookupItem(code) {
   }
 }
 
+// ===================== CORRECT STOCKS =====================
+// Same lookup as Check Stocks, plus a box to enter the physically counted
+// amount. We send that count to the backend, which back-solves Beginning
+// Balance so the sheet's own formula recalculates Stock on Hand to match.
+
+let correctStockItemCode = null;
+
+document.getElementById('startScanCorrect').addEventListener('click', function () {
+  openScanner('Scan Item Code', lookupItemForCorrection);
+});
+document.getElementById('correctManualCodeGo').addEventListener('click', function () {
+  lookupItemForCorrection(document.getElementById('correctManualCode').value.trim());
+});
+document.getElementById('correctManualCode').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    lookupItemForCorrection(e.target.value.trim());
+  }
+});
+
+async function lookupItemForCorrection(code) {
+  if (!code) return;
+  const resultBox = document.getElementById('correctResult');
+  const inputWrap = document.getElementById('correctInputWrap');
+  const msg = document.getElementById('msg-correctStocks');
+
+  msg.classList.add('hidden');
+  inputWrap.classList.add('hidden');
+  correctStockItemCode = null;
+
+  resultBox.classList.remove('hidden');
+  resultBox.innerHTML = '<span class="spinner"></span> Looking up "' + escapeHtml(code) + '"...';
+  try {
+    const res = await apiGet('checkStock', { code: code });
+    if (res.error) {
+      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.error) + '</div>';
+      return;
+    }
+    if (!res.found) {
+      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.message) + '</div>';
+      return;
+    }
+    correctStockItemCode = res.itemCode;
+    resultBox.innerHTML =
+      '<div class="result-row"><span class="result-label">Item</span><span class="result-value">' + escapeHtml(res.item) + '</span></div>' +
+      '<div class="result-row"><span class="result-label">Item Code</span><span class="result-value">' + escapeHtml(res.itemCode) + '</span></div>' +
+      '<div class="result-row"><span class="result-label">Stock on Hand</span><span class="result-value">' + escapeHtml(String(res.stockOnHand)) + '</span></div>';
+    document.getElementById('correctActualStock').value = '';
+    inputWrap.classList.remove('hidden');
+  } catch (err) {
+    resultBox.innerHTML = '<div class="msg error">' + escapeHtml(err.message || String(err)) + '</div>';
+  }
+}
+
+document.getElementById('correctSubmit').addEventListener('click', async function () {
+  const msg = document.getElementById('msg-correctStocks');
+  const actualInput = document.getElementById('correctActualStock');
+  const submitBtn = document.getElementById('correctSubmit');
+
+  if (!correctStockItemCode) { alert('Scan or enter an item first.'); return; }
+  if (actualInput.value === '' || isNaN(Number(actualInput.value)) || Number(actualInput.value) < 0) {
+    alert('Enter a valid actual stock count (0 or more).');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  msg.className = 'msg';
+  msg.classList.remove('hidden');
+  msg.innerHTML = '<span class="spinner"></span> Saving correction...';
+
+  try {
+    const res = await apiPost('correctStock', {
+      itemCode: correctStockItemCode,
+      actualStockOnHand: Number(actualInput.value)
+    });
+    if (res.error) throw new Error(res.error);
+
+    msg.className = 'msg success';
+    msg.innerHTML = 'Saved. Stock on Hand for <strong>' + escapeHtml(res.itemCode) + '</strong> now reflects the counted ' +
+      escapeHtml(String(res.actualStockOnHand)) + ' (Beginning Balance set to ' + escapeHtml(String(res.newBeginningBalance)) + ').';
+  } catch (err) {
+    msg.className = 'msg error';
+    msg.textContent = err.message || String(err);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
 // ===================== SMARTSHEET LINKS ("where is this saved?") =====================
 
 async function loadSheetLinks() {
@@ -158,11 +246,14 @@ async function loadSheetLinks() {
     const links = await apiGet('getSheetLinks');
     if (links.error) { console.error(links.error); return; }
     const checkLink = document.getElementById('checkstocks-sheet-link');
+    const correctLink = document.getElementById('correctstocks-sheet-link');
     const recvLink = document.getElementById('receiving-sheet-link');
     const issLink = document.getElementById('issuance-sheet-link');
     if (links.sourceSheetUrl) {
       checkLink.href = links.sourceSheetUrl;
       checkLink.classList.remove('hidden');
+      correctLink.href = links.sourceSheetUrl;
+      correctLink.classList.remove('hidden');
     }
     if (links.transactionsSheetUrl) {
       recvLink.href = links.transactionsSheetUrl;
