@@ -560,6 +560,13 @@ function setupBulkForm(prefix, type) {
 
       pending = [];
       render();
+      mrfInput.value = '';
+      projectNameInput.value = '';
+      soNumberInput.value = '';
+      priceInput.value = '';
+      qtyInput.value = '';
+      lobSel.value = '';
+      completedSel.value = 'YES';
       if (attachmentInput) attachmentInput.value = '';
       if (requestorCombo) requestorCombo.clear();
     } catch (err) {
