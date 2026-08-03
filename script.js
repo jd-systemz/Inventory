@@ -343,8 +343,10 @@ async function selectItemByCode(key, code) {
 
 function setupBulkForm(prefix, type) {
   const dateInput = document.getElementById(prefix + '-date');
-  const mrfInput = document.getElementById(prefix + '-mrf');           // optional — not required
-  const priceInput = document.getElementById(prefix + '-unitPrice');   // optional — not required
+  const mrfInput = document.getElementById(prefix + '-mrf');               // optional — not required
+  const projectNameInput = document.getElementById(prefix + '-projectName'); // optional — not required
+  const soNumberInput = document.getElementById(prefix + '-soNumber');     // optional — not required
+  const priceInput = document.getElementById(prefix + '-unitPrice');       // optional — not required
   const qtyInput = document.getElementById(prefix + '-qty');
   const lobSel = document.getElementById(prefix + '-lob');
   const completedSel = document.getElementById(prefix + '-completed');
@@ -388,7 +390,8 @@ function setupBulkForm(prefix, type) {
     if (!itemCode) { alert('Select an item first (type to search, or tap Scan).'); return; }
     if (!qtyInput.value || Number(qtyInput.value) <= 0) { alert('Enter a quantity greater than 0.'); return; }
     if (!lobSel.value) { alert('Select an LOB.'); return; }
-    // Note: MRF# and Unit Price are intentionally NOT validated here — both are optional.
+    // Note: MRF#, Project Name, SO#, and Unit Price are intentionally NOT
+    // validated here — all four are optional.
 
     const match = itemOptions.filter(function (o) { return o.code === itemCode; })[0];
 
@@ -396,6 +399,8 @@ function setupBulkForm(prefix, type) {
       itemCode: itemCode,
       itemName: match ? match.name : itemCode,
       mrf: mrfInput.value.trim(),
+      projectName: projectNameInput.value.trim(),
+      soNumber: soNumberInput.value.trim(),
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
@@ -407,6 +412,8 @@ function setupBulkForm(prefix, type) {
     // keep LOB/Completed since batches are often all the same.
     combos[prefix + '-item'].clear();
     mrfInput.value = '';
+    projectNameInput.value = '';
+    soNumberInput.value = '';
     priceInput.value = '';
     qtyInput.value = '';
   });
