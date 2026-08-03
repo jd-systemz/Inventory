@@ -410,6 +410,12 @@ function setupBulkForm(prefix, type) {
     if (!pending.length) return;
     if (!dateInput.value) { alert('Pick a date.'); return; }
 
+    const badRow = pending.find(function (r) { return !r.itemCode; });
+    if (badRow) {
+      alert('"' + badRow.itemName + '" has no Item Code attached (this shouldn\'t happen — please remove it from the list, re-add it by searching again, and try Submit All once more).');
+      return;
+    }
+
     let resolvedRequestor = null;
     if (requestorCombo) {
       resolvedRequestor = document.getElementById(prefix + '-requestor-value').value;
