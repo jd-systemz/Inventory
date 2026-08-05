@@ -45,7 +45,7 @@ function fileToBase64(file) {
 
 // ===================== MENU (with last-view persistence) =====================
 
-const views = ['checkStocks', 'correctStocks', 'receiving', 'issuance'];
+const views = ['checkStocks', 'correctStocks', 'updateRack', 'receiving', 'issuance'];
 const menuBtn = document.getElementById('menuBtn');
 const sideMenu = document.getElementById('sideMenu');
 const overlay = document.getElementById('overlay');
@@ -145,98 +145,186 @@ async function lookupItem(code) {
     resultBox.innerHTML =
       '<div class="result-row"><span class="result-label">Item</span><span class="result-value">' + escapeHtml(res.item) + '</span></div>' +
       '<div class="result-row"><span class="result-label">Item Code</span><span class="result-value">' + escapeHtml(res.itemCode) + '</span></div>' +
-      '<div class="result-row"><span class="result-label">Stock on Hand</span><span class="result-value">' + escapeHtml(String(res.stockOnHand)) + '</span></div>';
+      '<div class="result-row"><span class="result-label">Stock on Hand</span><span class="result-value">' + escapeHtml(String(res.stockOnHand)) + '</span></div>' +
+      (res.rack ? '<div class="result-row"><span class="result-label">Rack</span><span class="result-value">' + escapeHtml(String(res.rack)) + '</span></div>' : '');
   } catch (err) {
     resultBox.innerHTML = '<div class="msg error">' + escapeHtml(err.message || String(err)) + '</div>';
   }
 }
 
-// ===================== CORRECT STOCKS =====================
-// Same lookup as Check Stocks, plus a box to enter the physically counted
-// amount. We send that count to the backend, which back-solves Beginning
-// Balance so the sheet's own formula recalculates Stock on Hand to match.
+// ===================== GENERIC "SCAN -> CURRENT VALUE -> NEW VALUE -> BULK SUBMIT" FLOW =====================
+// Shared by Correct Stocks and Update Rack. Both follow the same pattern:
+// look up an item, see its current value, type the new value, stage it in
+// a list, then submit the WHOLE list in one network call. Staging client-
+// side and submitting once at the end is what keeps a batch of 10, 20, 50
+// items fast -- no per-item read+write round trip.
 
-let correctStockItemCode = null;
+function setupScanBulkForm(opts) {
+  const scanBtn = document.getElementById(opts.scanBtnId);
+  const manualInput = document.getElementById(opts.manualInputId);
+  const manualGoBtn = document.getElementById(opts.manualGoId);
+  const resultBox = document.getElementById(opts.resultBoxId);
+  const inputWrap = document.getElementById(opts.inputWrapId);
+  const valueInput = document.getElementById(opts.valueInputId);
+  const addBtn = document.getElementById(opts.addBtnId);
+  const tableBody = document.querySelector('#' + opts.prefix + '-table tbody');
+  const countEl = document.getElementById(opts.prefix + '-count');
+  const submitAllBtn = document.getElementById(opts.prefix + '-submit-all');
+  const msg = document.getElementById('msg-' + opts.prefix);
 
-document.getElementById('startScanCorrect').addEventListener('click', function () {
-  openScanner('Scan Item Code', lookupItemForCorrection);
-});
-document.getElementById('correctManualCodeGo').addEventListener('click', function () {
-  lookupItemForCorrection(document.getElementById('correctManualCode').value.trim());
-});
-document.getElementById('correctManualCode').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    lookupItemForCorrection(e.target.value.trim());
-  }
-});
+  let currentLookup = null; // { item, itemCode, currentValue }
+  let pending = [];
 
-async function lookupItemForCorrection(code) {
-  if (!code) return;
-  const resultBox = document.getElementById('correctResult');
-  const inputWrap = document.getElementById('correctInputWrap');
-  const msg = document.getElementById('msg-correctStocks');
-
-  msg.classList.add('hidden');
-  inputWrap.classList.add('hidden');
-  correctStockItemCode = null;
-
-  resultBox.classList.remove('hidden');
-  resultBox.innerHTML = '<span class="spinner"></span> Looking up "' + escapeHtml(code) + '"...';
-  try {
-    const res = await apiGet('checkStock', { code: code });
-    if (res.error) {
-      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.error) + '</div>';
-      return;
-    }
-    if (!res.found) {
-      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.message) + '</div>';
-      return;
-    }
-    correctStockItemCode = res.itemCode;
-    resultBox.innerHTML =
-      '<div class="result-row"><span class="result-label">Item</span><span class="result-value">' + escapeHtml(res.item) + '</span></div>' +
-      '<div class="result-row"><span class="result-label">Item Code</span><span class="result-value">' + escapeHtml(res.itemCode) + '</span></div>' +
-      '<div class="result-row"><span class="result-label">Stock on Hand</span><span class="result-value">' + escapeHtml(String(res.stockOnHand)) + '</span></div>';
-    document.getElementById('correctActualStock').value = '';
-    inputWrap.classList.remove('hidden');
-  } catch (err) {
-    resultBox.innerHTML = '<div class="msg error">' + escapeHtml(err.message || String(err)) + '</div>';
-  }
-}
-
-document.getElementById('correctSubmit').addEventListener('click', async function () {
-  const msg = document.getElementById('msg-correctStocks');
-  const actualInput = document.getElementById('correctActualStock');
-  const submitBtn = document.getElementById('correctSubmit');
-
-  if (!correctStockItemCode) { alert('Scan or enter an item first.'); return; }
-  if (actualInput.value === '' || isNaN(Number(actualInput.value)) || Number(actualInput.value) < 0) {
-    alert('Enter a valid actual stock count (0 or more).');
-    return;
-  }
-
-  submitBtn.disabled = true;
-  msg.className = 'msg';
-  msg.classList.remove('hidden');
-  msg.innerHTML = '<span class="spinner"></span> Saving correction...';
-
-  try {
-    const res = await apiPost('correctStock', {
-      itemCode: correctStockItemCode,
-      actualStockOnHand: Number(actualInput.value)
+  function render() {
+    tableBody.innerHTML = '';
+    pending.forEach(function (row, idx) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(row.itemName) + '</td>' +
+        '<td>' + escapeHtml(row.itemCode) + '</td>' +
+        '<td>' + escapeHtml(String(row.currentValue)) + '</td>' +
+        '<td>' + escapeHtml(String(row.newValue)) + '</td>' +
+        '<td><button type="button" class="remove-line" data-idx="' + idx + '">&#10005;</button></td>';
+      tableBody.appendChild(tr);
     });
-    if (res.error) throw new Error(res.error);
-
-    msg.className = 'msg success';
-    msg.innerHTML = 'Saved. Stock on Hand for <strong>' + escapeHtml(res.itemCode) + '</strong> now reflects the counted ' +
-      escapeHtml(String(res.actualStockOnHand)) + ' (Beginning Balance set to ' + escapeHtml(String(res.newBeginningBalance)) + ').';
-  } catch (err) {
-    msg.className = 'msg error';
-    msg.textContent = err.message || String(err);
-  } finally {
-    submitBtn.disabled = false;
+    countEl.textContent = pending.length;
+    submitAllBtn.disabled = pending.length === 0;
+    tableBody.querySelectorAll('.remove-line').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        pending.splice(Number(btn.dataset.idx), 1);
+        render();
+      });
+    });
   }
+
+  async function lookup(code) {
+    if (!code) return;
+    msg.classList.add('hidden');
+    inputWrap.classList.add('hidden');
+    currentLookup = null;
+    resultBox.classList.remove('hidden');
+    resultBox.innerHTML = '<span class="spinner"></span> Looking up "' + escapeHtml(code) + '"...';
+    try {
+      const res = await apiGet('checkStock', { code: code });
+      if (res.error) { resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.error) + '</div>'; return; }
+      if (!res.found) { resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.message) + '</div>'; return; }
+
+      if (pending.some(function (r) { return r.itemCode === res.itemCode; })) {
+        resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.item) + ' is already staged below - remove it first if you want to re-enter it.</div>';
+        return;
+      }
+
+      currentLookup = { item: res.item, itemCode: res.itemCode, currentValue: res[opts.currentValueField] };
+      resultBox.innerHTML =
+        '<div class="result-row"><span class="result-label">Item</span><span class="result-value">' + escapeHtml(res.item) + '</span></div>' +
+        '<div class="result-row"><span class="result-label">Item Code</span><span class="result-value">' + escapeHtml(res.itemCode) + '</span></div>' +
+        '<div class="result-row"><span class="result-label">' + escapeHtml(opts.currentValueLabel) + '</span><span class="result-value">' + escapeHtml(String(res[opts.currentValueField])) + '</span></div>';
+      valueInput.value = '';
+      inputWrap.classList.remove('hidden');
+      valueInput.focus();
+    } catch (err) {
+      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  scanBtn.addEventListener('click', function () { openScanner('Scan Item Code', lookup); });
+  manualGoBtn.addEventListener('click', function () { lookup(manualInput.value.trim()); });
+  manualInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); lookup(e.target.value.trim()); }
+  });
+
+  addBtn.addEventListener('click', function () {
+    if (!currentLookup) { alert('Scan or enter an item first.'); return; }
+    const parsed = opts.parseValue(valueInput.value);
+    if (parsed === null || parsed === undefined) return; // parseValue already alerted
+
+    pending.push({
+      itemCode: currentLookup.itemCode,
+      itemName: currentLookup.item,
+      currentValue: currentLookup.currentValue,
+      newValue: parsed
+    });
+    render();
+
+    currentLookup = null;
+    inputWrap.classList.add('hidden');
+    resultBox.classList.add('hidden');
+    manualInput.value = '';
+    manualInput.focus();
+  });
+
+  submitAllBtn.addEventListener('click', async function () {
+    if (!pending.length) return;
+    submitAllBtn.disabled = true;
+    msg.className = 'msg';
+    msg.classList.remove('hidden');
+    msg.innerHTML = '<span class="spinner"></span> Saving ' + pending.length + ' update(s)...';
+
+    try {
+      const rows = pending.map(opts.buildPayloadRow);
+      const res = await apiPost(opts.apiAction, { rows: rows });
+      if (res.error) throw new Error(res.error);
+
+      msg.className = 'msg success';
+      msg.innerHTML = opts.successText(res);
+      if (res.notFound && res.notFound.length) {
+        msg.innerHTML += '<br>Not found / skipped: ' + res.notFound.map(escapeHtml).join(', ');
+      }
+
+      pending = [];
+      render();
+    } catch (err) {
+      msg.className = 'msg error';
+      msg.textContent = err.message || String(err);
+      submitAllBtn.disabled = false; // let them retry without losing the list
+    }
+  });
+
+  render();
+}
+
+setupScanBulkForm({
+  prefix: 'correctStocks',
+  scanBtnId: 'startScanCorrect',
+  manualInputId: 'correctManualCode',
+  manualGoId: 'correctManualCodeGo',
+  resultBoxId: 'correctResult',
+  inputWrapId: 'correctInputWrap',
+  valueInputId: 'correctActualStock',
+  addBtnId: 'correctAddToList',
+  currentValueField: 'stockOnHand',
+  currentValueLabel: 'Stock on Hand',
+  parseValue: function (raw) {
+    if (raw === '' || isNaN(Number(raw)) || Number(raw) < 0) {
+      alert('Enter a valid actual stock count (0 or more).');
+      return null;
+    }
+    return Number(raw);
+  },
+  apiAction: 'bulkCorrectStock',
+  buildPayloadRow: function (row) { return { itemCode: row.itemCode, actualStockOnHand: row.newValue }; },
+  successText: function (res) { return res.count + ' stock correction(s) saved.'; }
+});
+
+setupScanBulkForm({
+  prefix: 'updateRack',
+  scanBtnId: 'startScanRack',
+  manualInputId: 'rackManualCode',
+  manualGoId: 'rackManualCodeGo',
+  resultBoxId: 'rackResult',
+  inputWrapId: 'rackInputWrap',
+  valueInputId: 'rackNumberInput',
+  addBtnId: 'rackAddToList',
+  currentValueField: 'rack',
+  currentValueLabel: 'Current Rack',
+  parseValue: function (raw) {
+    const trimmed = (raw || '').trim();
+    if (!trimmed) { alert('Enter a rack number/location.'); return null; }
+    return trimmed;
+  },
+  apiAction: 'bulkUpdateRack',
+  buildPayloadRow: function (row) { return { itemCode: row.itemCode, rack: row.newValue }; },
+  successText: function (res) { return res.count + ' rack update(s) saved.'; }
 });
 
 // ===================== SMARTSHEET LINKS ("where is this saved?") =====================
@@ -247,6 +335,7 @@ async function loadSheetLinks() {
     if (links.error) { console.error(links.error); return; }
     const checkLink = document.getElementById('checkstocks-sheet-link');
     const correctLink = document.getElementById('correctstocks-sheet-link');
+    const rackLink = document.getElementById('updateRack-sheet-link');
     const recvLink = document.getElementById('receiving-sheet-link');
     const issLink = document.getElementById('issuance-sheet-link');
     if (links.sourceSheetUrl) {
@@ -254,6 +343,10 @@ async function loadSheetLinks() {
       checkLink.classList.remove('hidden');
       correctLink.href = links.sourceSheetUrl;
       correctLink.classList.remove('hidden');
+      if (rackLink) {
+        rackLink.href = links.sourceSheetUrl;
+        rackLink.classList.remove('hidden');
+      }
     }
     if (links.transactionsSheetUrl) {
       recvLink.href = links.transactionsSheetUrl;
@@ -361,7 +454,7 @@ async function loadItemList() {
     itemOptions = items;
   } catch (err) {
     itemListError = (err.message || String(err)) +
-      ' — check that your Apps Script is deployed as a NEW version after any code changes.';
+      ' - check that your Apps Script is deployed as a NEW version after any code changes.';
     itemOptions = [];
   }
   if (combos['receiving-item']) combos['receiving-item'].refresh();
