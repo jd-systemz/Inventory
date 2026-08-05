@@ -12,12 +12,14 @@
       <button id="menuBtn" class="icon-btn" aria-label="Menu">&#9776;</button>
       <h1>ACP & GCP Inventory</h1>
       <div class="spacer"></div>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle light/dark mode">&#127769;</button>
     </header>
 
     <nav id="sideMenu" class="side-menu">
       <button class="menu-item" data-view="checkStocks">Check Stocks</button>
       <button class="menu-item" data-view="correctStocks">Correct Stocks</button>
       <button class="menu-item" data-view="updateRack">Update Rack</button>
+      <button class="menu-item" data-view="barcodeDone">Barcode Done</button>
       <button class="menu-item" data-view="receiving">Receiving</button>
       <button class="menu-item" data-view="issuance">Issuance</button>
     </nav>
@@ -29,29 +31,41 @@
         <div class="card">
           <h2>Check Stocks</h2>
           <a id="checkstocks-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
-          <div class="row">
-            <button id="startScanCheck" class="btn btn-primary">Scan Item</button>
+
+          <div class="field">
+            <label for="checkStocks-item-input">Item</label>
+            <div class="row">
+              <div class="combo" id="checkStocks-item-combo">
+                <input type="text" id="checkStocks-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" />
+                <input type="hidden" id="checkStocks-item-value" />
+                <div class="combo-list hidden" id="checkStocks-item-list"></div>
+              </div>
+              <button type="button" class="btn btn-ghost" id="checkStocks-scan-btn">Scan</button>
+            </div>
           </div>
-          <div class="manual-entry row">
-            <input id="manualCode" type="text" placeholder="Or type / scan Item Code" />
-            <button id="manualCodeGo" class="btn btn-ghost">Enter</button>
-          </div>
+
           <div id="stockResult" class="result-card hidden"></div>
         </div>
       </section>
 
-      <!-- Correct Stocks (bulk) -->
+      <!-- Correct Stocks (bulk, type-to-search) -->
       <section id="view-correctStocks" class="view">
         <div class="card">
           <h2>Correct Stocks</h2>
           <a id="correctstocks-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
-          <div class="row">
-            <button id="startScanCorrect" class="btn btn-primary">Scan Item</button>
+
+          <div class="field">
+            <label for="correctStocks-item-input">Item</label>
+            <div class="row">
+              <div class="combo" id="correctStocks-item-combo">
+                <input type="text" id="correctStocks-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" />
+                <input type="hidden" id="correctStocks-item-value" />
+                <div class="combo-list hidden" id="correctStocks-item-list"></div>
+              </div>
+              <button type="button" class="btn btn-ghost" id="correctStocks-scan-btn">Scan</button>
+            </div>
           </div>
-          <div class="manual-entry row">
-            <input id="correctManualCode" type="text" placeholder="Or type / scan Item Code" />
-            <button id="correctManualCodeGo" class="btn btn-ghost">Enter</button>
-          </div>
+
           <div id="correctResult" class="result-card hidden"></div>
 
           <div class="field hidden" id="correctInputWrap" style="margin-top:16px;">
@@ -74,7 +88,7 @@
         </div>
       </section>
 
-      <!-- Update Rack (choose the rack once, then scan everything in it) -->
+      <!-- Update Rack (choose the rack once, then scan continuously) -->
       <section id="view-updateRack" class="view">
         <div class="card">
           <h2>Update Rack</h2>
@@ -104,13 +118,19 @@
             <div id="rackSelectedLabel" class="hint" style="margin-top:-6px; margin-bottom:14px;"></div>
           </div>
 
+          <div class="field">
+            <label for="updateRack-item-input">Item <span class="hint">(type to search, or scan continuously below)</span></label>
+            <div class="combo" id="updateRack-item-combo">
+              <input type="text" id="updateRack-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" disabled />
+              <input type="hidden" id="updateRack-item-value" />
+              <div class="combo-list hidden" id="updateRack-item-list"></div>
+            </div>
+          </div>
+
           <div class="row">
-            <button id="startScanRack" class="btn btn-primary" disabled>Scan Item</button>
+            <button id="startScanRack" class="btn btn-primary" disabled>Start Continuous Scan</button>
           </div>
-          <div class="manual-entry row">
-            <input id="rackManualCode" type="text" placeholder="Or type / scan Item Code" disabled />
-            <button id="rackManualCodeGo" class="btn btn-ghost" disabled>Enter</button>
-          </div>
+
           <div id="rackResult" class="result-card hidden"></div>
 
           <div class="pending-list">
@@ -124,6 +144,42 @@
             <button type="button" id="updateRack-submit-all" class="btn btn-primary" disabled>Submit All</button>
           </div>
           <div id="msg-updateRack" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Barcode Done (scan continuously, checks a checkbox column) -->
+      <section id="view-barcodeDone" class="view">
+        <div class="card">
+          <h2>Barcode Done</h2>
+          <a id="barcodeDone-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
+          <p class="hint" style="margin: -8px 0 16px 0;">Checks the "Barcode Done" box in Smartsheet for every item scanned.</p>
+
+          <div class="field">
+            <label for="barcodeDone-item-input">Item</label>
+            <div class="combo" id="barcodeDone-item-combo">
+              <input type="text" id="barcodeDone-item-input" class="combo-input" placeholder="Type to search item..." autocomplete="off" />
+              <input type="hidden" id="barcodeDone-item-value" />
+              <div class="combo-list hidden" id="barcodeDone-item-list"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <button id="startScanBarcodeDone" class="btn btn-primary">Start Continuous Scan</button>
+          </div>
+
+          <div id="barcodeDoneResult" class="result-card hidden"></div>
+
+          <div class="pending-list">
+            <h3>Items to mark done (<span id="barcodeDone-count">0</span>)</h3>
+            <div class="table-wrap">
+              <table id="barcodeDone-table" class="line-table">
+                <thead><tr><th>Item</th><th>Code</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <button type="button" id="barcodeDone-submit-all" class="btn btn-primary" disabled>Submit All</button>
+          </div>
+          <div id="msg-barcodeDone" class="msg hidden"></div>
         </div>
       </section>
 
@@ -301,7 +357,9 @@
     </main>
   </div>
 
-  <!-- Shared scanner modal, used by all three views -->
+  <!-- Shared scanner modal. In "continuous" mode (Update Rack / Barcode Done)
+       it stays open across multiple scans and shows live feedback below the
+       camera instead of closing after each decode. -->
   <div id="scannerModal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
@@ -309,6 +367,7 @@
         <button id="closeScanner" class="icon-btn" aria-label="Close">&#10005;</button>
       </div>
       <div id="scannerRegion" class="scanner-box"></div>
+      <div id="scannerFeedback" class="scanner-feedback hidden"></div>
     </div>
   </div>
 
