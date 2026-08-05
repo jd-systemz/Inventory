@@ -74,25 +74,44 @@
         </div>
       </section>
 
-      <!-- Update Rack (bulk) -->
+      <!-- Update Rack (choose the rack once, then scan everything in it) -->
       <section id="view-updateRack" class="view">
         <div class="card">
           <h2>Update Rack</h2>
           <a id="updateRack-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
+
+          <div class="field">
+            <label>Rack <span class="hint">(select once, then scan every item that belongs there)</span></label>
+            <div class="row">
+              <select id="rackPrefix">
+                <option value="">LOB</option>
+                <option value="ACP">ACP</option>
+                <option value="SP5">SP5</option>
+                <option value="SCP">SCP</option>
+              </select>
+              <select id="rackNumber">
+                <option value="">Rack #</option>
+              </select>
+              <select id="rackLetter">
+                <option value="">Section</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+              </select>
+            </div>
+            <div id="rackSelectedLabel" class="hint" style="margin-top:-6px; margin-bottom:14px;"></div>
+          </div>
+
           <div class="row">
-            <button id="startScanRack" class="btn btn-primary">Scan Item</button>
+            <button id="startScanRack" class="btn btn-primary" disabled>Scan Item</button>
           </div>
           <div class="manual-entry row">
-            <input id="rackManualCode" type="text" placeholder="Or type / scan Item Code" />
-            <button id="rackManualCodeGo" class="btn btn-ghost">Enter</button>
+            <input id="rackManualCode" type="text" placeholder="Or type / scan Item Code" disabled />
+            <button id="rackManualCodeGo" class="btn btn-ghost" disabled>Enter</button>
           </div>
           <div id="rackResult" class="result-card hidden"></div>
-
-          <div class="field hidden" id="rackInputWrap" style="margin-top:16px;">
-            <label for="rackNumberInput">Rack <span class="hint">(new rack / location)</span></label>
-            <input type="text" id="rackNumberInput" placeholder="e.g. INV.01 - R01_B" />
-            <button type="button" id="rackAddToList" class="btn btn-primary" style="margin-top:10px; width:100%;">+ Add to List</button>
-          </div>
 
           <div class="pending-list">
             <h3>Rack updates to submit (<span id="updateRack-count">0</span>)</h3>
