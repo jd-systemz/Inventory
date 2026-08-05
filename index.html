@@ -17,6 +17,7 @@
     <nav id="sideMenu" class="side-menu">
       <button class="menu-item" data-view="checkStocks">Check Stocks</button>
       <button class="menu-item" data-view="correctStocks">Correct Stocks</button>
+      <button class="menu-item" data-view="updateRack">Update Rack</button>
       <button class="menu-item" data-view="receiving">Receiving</button>
       <button class="menu-item" data-view="issuance">Issuance</button>
     </nav>
@@ -39,7 +40,7 @@
         </div>
       </section>
 
-      <!-- Correct Stocks -->
+      <!-- Correct Stocks (bulk) -->
       <section id="view-correctStocks" class="view">
         <div class="card">
           <h2>Correct Stocks</h2>
@@ -56,9 +57,54 @@
           <div class="field hidden" id="correctInputWrap" style="margin-top:16px;">
             <label for="correctActualStock">Actual Stock on Hand <span class="hint">(what you physically counted)</span></label>
             <input type="number" id="correctActualStock" step="1" min="0" />
-            <button type="button" id="correctSubmit" class="btn btn-primary" style="margin-top:10px; width:100%;">Save Correction</button>
+            <button type="button" id="correctAddToList" class="btn btn-primary" style="margin-top:10px; width:100%;">+ Add to List</button>
+          </div>
+
+          <div class="pending-list">
+            <h3>Corrections to submit (<span id="correctStocks-count">0</span>)</h3>
+            <div class="table-wrap">
+              <table id="correctStocks-table" class="line-table">
+                <thead><tr><th>Item</th><th>Code</th><th>Current</th><th>New Count</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <button type="button" id="correctStocks-submit-all" class="btn btn-primary" disabled>Submit All</button>
           </div>
           <div id="msg-correctStocks" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Update Rack (bulk) -->
+      <section id="view-updateRack" class="view">
+        <div class="card">
+          <h2>Update Rack</h2>
+          <a id="updateRack-sheet-link" class="sheet-link hidden" href="#" target="_blank" rel="noopener">Open item list in Smartsheet &#8599;</a>
+          <div class="row">
+            <button id="startScanRack" class="btn btn-primary">Scan Item</button>
+          </div>
+          <div class="manual-entry row">
+            <input id="rackManualCode" type="text" placeholder="Or type / scan Item Code" />
+            <button id="rackManualCodeGo" class="btn btn-ghost">Enter</button>
+          </div>
+          <div id="rackResult" class="result-card hidden"></div>
+
+          <div class="field hidden" id="rackInputWrap" style="margin-top:16px;">
+            <label for="rackNumberInput">Rack <span class="hint">(new rack / location)</span></label>
+            <input type="text" id="rackNumberInput" placeholder="e.g. R-12" />
+            <button type="button" id="rackAddToList" class="btn btn-primary" style="margin-top:10px; width:100%;">+ Add to List</button>
+          </div>
+
+          <div class="pending-list">
+            <h3>Rack updates to submit (<span id="updateRack-count">0</span>)</h3>
+            <div class="table-wrap">
+              <table id="updateRack-table" class="line-table">
+                <thead><tr><th>Item</th><th>Code</th><th>Current Rack</th><th>New Rack</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <button type="button" id="updateRack-submit-all" class="btn btn-primary" disabled>Submit All</button>
+          </div>
+          <div id="msg-updateRack" class="msg hidden"></div>
         </div>
       </section>
 
