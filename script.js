@@ -306,26 +306,155 @@ setupScanBulkForm({
   successText: function (res) { return res.count + ' stock correction(s) saved.'; }
 });
 
-setupScanBulkForm({
-  prefix: 'updateRack',
-  scanBtnId: 'startScanRack',
-  manualInputId: 'rackManualCode',
-  manualGoId: 'rackManualCodeGo',
-  resultBoxId: 'rackResult',
-  inputWrapId: 'rackInputWrap',
-  valueInputId: 'rackNumberInput',
-  addBtnId: 'rackAddToList',
-  currentValueField: 'rack',
-  currentValueLabel: 'Current Rack',
-  parseValue: function (raw) {
-    const trimmed = (raw || '').trim();
-    if (!trimmed) { alert('Enter a rack number/location.'); return null; }
-    return trimmed;
-  },
-  apiAction: 'bulkUpdateRack',
-  buildPayloadRow: function (row) { return { itemCode: row.itemCode, rack: row.newValue }; },
-  successText: function (res) { return res.count + ' rack update(s) saved.'; }
-});
+// ===================== UPDATE RACK (choose the rack once, then scan repeatedly) =====================
+// Different shape from Correct Stocks on purpose: here the "new value" is
+// fixed once you pick LOB + Rack# + Section, so every scan just needs to
+// find the item and stage it — no per-item typing, which is what makes
+// walking a rack and scanning everything on it fast.
+
+function setupRackForm() {
+  const prefixSel = document.getElementById('rackPrefix');
+  const numberSel = document.getElementById('rackNumber');
+  const letterSel = document.getElementById('rackLetter');
+  const selectedLabel = document.getElementById('rackSelectedLabel');
+  const scanBtn = document.getElementById('startScanRack');
+  const manualInput = document.getElementById('rackManualCode');
+  const manualGoBtn = document.getElementById('rackManualCodeGo');
+  const resultBox = document.getElementById('rackResult');
+  const tableBody = document.querySelector('#updateRack-table tbody');
+  const countEl = document.getElementById('updateRack-count');
+  const submitAllBtn = document.getElementById('updateRack-submit-all');
+  const msg = document.getElementById('msg-updateRack');
+
+  // R01..R25
+  for (let i = 1; i <= 25; i++) {
+    const val = 'R' + String(i).padStart(2, '0');
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    numberSel.appendChild(opt);
+  }
+
+  let pending = [];
+
+  function currentRackValue() {
+    if (!prefixSel.value || !numberSel.value || !letterSel.value) return '';
+    return prefixSel.value + '-' + numberSel.value + '_' + letterSel.value;
+  }
+
+  function updateRackReadiness() {
+    const rack = currentRackValue();
+    const ready = !!rack;
+    scanBtn.disabled = !ready;
+    manualInput.disabled = !ready;
+    manualGoBtn.disabled = !ready;
+    selectedLabel.textContent = ready ? ('Scanning into: ' + rack) : 'Select LOB, rack #, and section to begin.';
+  }
+  [prefixSel, numberSel, letterSel].forEach(function (sel) {
+    sel.addEventListener('change', updateRackReadiness);
+  });
+  updateRackReadiness();
+
+  function render() {
+    tableBody.innerHTML = '';
+    pending.forEach(function (row, idx) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(row.itemName) + '</td>' +
+        '<td>' + escapeHtml(row.itemCode) + '</td>' +
+        '<td>' + escapeHtml(String(row.currentValue)) + '</td>' +
+        '<td>' + escapeHtml(row.newValue) + '</td>' +
+        '<td><button type="button" class="remove-line" data-idx="' + idx + '">&#10005;</button></td>';
+      tableBody.appendChild(tr);
+    });
+    countEl.textContent = pending.length;
+    submitAllBtn.disabled = pending.length === 0;
+    tableBody.querySelectorAll('.remove-line').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        pending.splice(Number(btn.dataset.idx), 1);
+        render();
+      });
+    });
+  }
+
+  async function scanAndStage(code) {
+    const rack = currentRackValue();
+    if (!rack) { alert('Select LOB, rack #, and section first.'); return; }
+    if (!code) return;
+
+    resultBox.classList.remove('hidden');
+    resultBox.innerHTML = '<span class="spinner"></span> Looking up "' + escapeHtml(code) + '"...';
+    try {
+      const res = await apiGet('checkStock', { code: code });
+      if (res.error) { resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.error) + '</div>'; return; }
+      if (!res.found) { resultBox.innerHTML = '<div class="msg error">' + escapeHtml(res.message) + '</div>'; return; }
+
+      const existingIdx = pending.findIndex(function (r) { return r.itemCode === res.itemCode; });
+      if (existingIdx !== -1) {
+        // Re-scanning an already-staged item just moves it to the currently selected rack.
+        pending[existingIdx].newValue = rack;
+        render();
+        resultBox.innerHTML = '<div class="msg success">Moved ' + escapeHtml(res.item) + ' to ' + escapeHtml(rack) + '.</div>';
+        return;
+      }
+
+      pending.push({
+        itemCode: res.itemCode,
+        itemName: res.item,
+        currentValue: res.rack || '(none)',
+        newValue: rack
+      });
+      render();
+      resultBox.innerHTML = '<div class="msg success">Added ' + escapeHtml(res.item) + ' &rarr; ' + escapeHtml(rack) + '. Scan the next item.</div>';
+    } catch (err) {
+      resultBox.innerHTML = '<div class="msg error">' + escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  scanBtn.addEventListener('click', function () { openScanner('Scan Item Code', scanAndStage); });
+  manualGoBtn.addEventListener('click', function () {
+    const code = manualInput.value.trim();
+    manualInput.value = '';
+    scanAndStage(code);
+  });
+  manualInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = e.target.value.trim();
+      manualInput.value = '';
+      scanAndStage(code);
+    }
+  });
+
+  submitAllBtn.addEventListener('click', async function () {
+    if (!pending.length) return;
+    submitAllBtn.disabled = true;
+    msg.className = 'msg';
+    msg.classList.remove('hidden');
+    msg.innerHTML = '<span class="spinner"></span> Saving ' + pending.length + ' rack update(s)...';
+
+    try {
+      const rows = pending.map(function (row) { return { itemCode: row.itemCode, rack: row.newValue }; });
+      const res = await apiPost('bulkUpdateRack', { rows: rows });
+      if (res.error) throw new Error(res.error);
+
+      msg.className = 'msg success';
+      msg.innerHTML = res.count + ' rack update(s) saved.';
+      if (res.notFound && res.notFound.length) {
+        msg.innerHTML += '<br>Not found / skipped: ' + res.notFound.map(escapeHtml).join(', ');
+      }
+
+      pending = [];
+      render();
+    } catch (err) {
+      msg.className = 'msg error';
+      msg.textContent = err.message || String(err);
+      submitAllBtn.disabled = false; // let them retry without losing the list
+    }
+  });
+
+  render();
+}
 
 // ===================== SMARTSHEET LINKS ("where is this saved?") =====================
 
@@ -684,6 +813,7 @@ window.addEventListener('load', function () {
   loadItemList();
   loadSheetLinks();
   loadRequestorOptions();
+  setupRackForm();
   setupBulkForm('receiving', 'Receiving');
   setupBulkForm('issuance', 'Issuance');
 });
