@@ -1,13 +1,9 @@
-// PASTE your deployed Apps Script Web App URL here
 const API_URL = 'https://script.google.com/macros/s/AKfycbxx448moFrOP0e5lYa9FBpzXiXdCgvyqT3xhYHhfuL-ecdJk8as7pSvFeZfmhvYGbQ-/exec';
-const LAST_VIEW_KEY = 'inventory_last_view';
-const THEME_KEY = 'inventory_theme';
 
-// ===================== THEME & MENU =====================
 const views = ['checkStocks', 'correctStocks', 'updateRack', 'barcodeDone', 'receiving', 'issuance', 'inventoryControls'];
-// ... theme logic ...
 
 // ===================== API HELPERS =====================
+
 async function apiPost(action, payload) {
   const resp = await fetch(API_URL, {
     method: 'POST',
@@ -16,17 +12,45 @@ async function apiPost(action, payload) {
   });
   return resp.json();
 }
-// ... other api helpers ...
+
+async function apiGet(action, params = {}) {
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  for (let k in params) url.searchParams.set(k, params[k]);
+  const resp = await fetch(url);
+  return resp.json();
+}
+
+// ===================== NAVIGATION =====================
+
+function activateView(target) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + target));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.toggle('active', m.dataset.view === target));
+}
+
+document.querySelectorAll('.menu-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activateView(btn.dataset.view);
+    document.getElementById('sideMenu').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  });
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  document.getElementById('sideMenu').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+});
 
 // ===================== INVENTORY CONTROLS =====================
+
 const controlsMsg = document.getElementById('msg-controls');
 
 async function runControlAction(action, label) {
-  if (!confirm(`Run ${label}? This might take a while.`)) return;
+  if (!confirm(`Are you sure you want to run: ${label}?`)) return;
   
   controlsMsg.className = 'msg';
   controlsMsg.classList.remove('hidden');
-  controlsMsg.innerHTML = `<span class="spinner"></span> Running ${label}...`;
+  controlsMsg.innerHTML = `<span class="spinner"></span> Processing ${label}... Please wait.`;
 
   try {
     const res = await apiPost(action, {});
@@ -40,21 +64,13 @@ async function runControlAction(action, label) {
   }
 }
 
-document.getElementById('btn-downloadBarcodes').addEventListener('click', () => {
-  runControlAction('bulkDownloadBarcodes', 'Download Barcodes to Drive');
-});
+document.getElementById('btn-downloadBarcodes').addEventListener('click', () => runControlAction('bulkDownloadBarcodes', 'Download Barcodes to Drive'));
+document.getElementById('btn-createBarcodes').addEventListener('click', () => runControlAction('bulkCreateBarcodes', 'Create Barcodes in Smartsheet'));
+document.getElementById('btn-syncDropdown').addEventListener('click', () => runControlAction('syncDropdownOptions', 'Update Dropdown Options'));
 
-document.getElementById('btn-createBarcodes').addEventListener('click', () => {
-  runControlAction('bulkCreateBarcodes', 'Create Barcodes in Smartsheet');
-});
+// ===================== SHARED LOGIC (STUBS) =====================
+// Add your specific scanner and button logic for the other views here...
 
-document.getElementById('btn-syncDropdown').addEventListener('click', () => {
-  runControlAction('syncDropdownOptions', 'Update Dropdown Options');
-});
-
-// ===================== INIT =====================
-window.addEventListener('load', function () {
-  // Existing init code
-  activateView(localStorage.getItem(LAST_VIEW_KEY) || 'checkStocks');
-  // ... rest of init ...
+window.addEventListener('load', () => {
+  activateView('checkStocks');
 });
