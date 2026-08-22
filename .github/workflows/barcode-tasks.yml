@@ -1,0 +1,43 @@
+name: Barcode Tasks
+
+# Triggered either manually from the GitHub Actions tab, or remotely by
+# Apps Script (triggerGithubWorkflow_ in code.gs) via the workflow_dispatch
+# REST API. "mode" decides which job runs.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          generate = fill in Barcode cells in Smartsheet for rows where
+          Item Code is set and Barcode is blank (no Drive upload).
+          download = build barcode + product photo images and upload them
+          to the shared Google Drive folder (does not touch Smartsheet).
+        required: true
+        default: 'generate'
+        type: choice
+        options:
+          - generate
+          - download
+
+jobs:
+  run-barcode-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install smartsheet-python-sdk python-barcode Pillow requests google-api-python-client google-auth
+
+      - name: Run barcode worker
+        env:
+          SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_ACCESS_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          DRIVE_FOLDER_ID: '1X7EUT3WLz9dxWbfREs_NCBL0HZcc7qyA'
+          MODE: ${{ inputs.mode }}
+        run: python barcode_worker.py
