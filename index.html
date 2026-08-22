@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventory</title>
+  <title>Inventory Management</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <button id="menuBtn" class="icon-btn" aria-label="Menu">&#9776;</button>
-      <h1>ACP & GCP Inventory</h1>
+      <h1>Inventory System</h1>
       <div class="spacer"></div>
-      <button id="themeToggle" class="icon-btn" aria-label="Toggle light/dark mode">&#127769;</button>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">&#127769;</button>
     </header>
 
     <nav id="sideMenu" class="side-menu">
@@ -27,25 +27,126 @@
     <div id="overlay" class="overlay"></div>
 
     <main id="content">
-      <!-- ... existing views ... -->
+      <!-- Check Stocks -->
+      <section id="view-checkStocks" class="view">
+        <div class="card">
+          <h2>Check Stocks</h2>
+          <div class="field">
+            <label>Item Code</label>
+            <div class="row">
+              <input type="text" id="checkStocks-code" placeholder="Scan or type code..." />
+              <button class="btn btn-ghost" id="checkStocks-scan-btn">Scan</button>
+            </div>
+          </div>
+          <div id="stockResult" class="result-card hidden"></div>
+        </div>
+      </section>
+
+      <!-- Correct Stocks -->
+      <section id="view-correctStocks" class="view">
+        <div class="card">
+          <h2>Correct Stocks</h2>
+          <div class="line-entry">
+            <input type="text" id="correct-code" placeholder="Item Code" />
+            <input type="number" id="correct-qty" placeholder="Actual Qty" />
+            <button id="correct-add" class="btn btn-primary">Add to Batch</button>
+          </div>
+          <div class="pending-list">
+             <table id="correct-table" class="line-table">
+               <thead><tr><th>Code</th><th>Qty</th><th></th></tr></thead>
+               <tbody></tbody>
+             </table>
+             <button id="correct-submit" class="btn btn-primary" disabled>Submit Batch</button>
+          </div>
+          <div id="msg-correct" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Update Rack -->
+      <section id="view-updateRack" class="view">
+        <div class="card">
+          <h2>Update Rack</h2>
+          <div class="field">
+            <label>Rack Location</label>
+            <input type="text" id="rack-name" placeholder="e.g. ACP-R01-A" />
+          </div>
+          <button id="rack-scan-btn" class="btn btn-primary">Start Continuous Scan</button>
+          <div class="pending-list">
+             <table id="rack-table" class="line-table">
+               <thead><tr><th>Code</th><th>Rack</th><th></th></tr></thead>
+               <tbody></tbody>
+             </table>
+             <button id="rack-submit" class="btn btn-primary" disabled>Submit All</button>
+          </div>
+          <div id="msg-rack" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Barcode Done -->
+      <section id="view-barcodeDone" class="view">
+        <div class="card">
+          <h2>Barcode Done</h2>
+          <button id="barcode-scan-btn" class="btn btn-primary">Scan Items to Mark Done</button>
+          <div class="pending-list">
+             <table id="barcode-table" class="line-table">
+               <thead><tr><th>Code</th><th></th></tr></thead>
+               <tbody></tbody>
+             </table>
+             <button id="barcode-submit" class="btn btn-primary" disabled>Mark All Done</button>
+          </div>
+          <div id="msg-barcode" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Receiving / Issuance (Generic Template) -->
+      <section id="view-receiving" class="view">
+        <div class="card">
+          <h2>Receiving</h2>
+          <div class="field"><label>Date</label><input type="date" id="receiving-date" /></div>
+          <div class="line-entry">
+            <input type="text" id="receiving-item" placeholder="Item Name/Code" />
+            <input type="number" id="receiving-qty" placeholder="Qty" />
+            <select id="receiving-lob"><option value="ACP">ACP</option><option value="GCP">GCP</option></select>
+            <button id="receiving-add" class="btn btn-primary">Add</button>
+          </div>
+          <button id="receiving-submit" class="btn btn-primary" style="margin-top:20px;">Submit All</button>
+          <div id="msg-receiving" class="msg hidden"></div>
+        </div>
+      </section>
+
+      <section id="view-issuance" class="view">
+        <div class="card">
+          <h2>Issuance</h2>
+          <div class="field"><label>Date</label><input type="date" id="issuance-date" /></div>
+          <div class="field"><label>Requestor</label><select id="issuance-req"></select></div>
+          <div class="line-entry">
+            <input type="text" id="issuance-item" placeholder="Item Name/Code" />
+            <input type="number" id="issuance-qty" placeholder="Qty" />
+            <select id="issuance-lob"><option value="ACP">ACP</option><option value="GCP">GCP</option></select>
+            <button id="issuance-add" class="btn btn-primary">Add</button>
+          </div>
+          <button id="issuance-submit" class="btn btn-primary" style="margin-top:20px;">Submit All</button>
+          <div id="msg-issuance" class="msg hidden"></div>
+        </div>
+      </section>
 
       <!-- Inventory Controls -->
       <section id="view-inventoryControls" class="view">
         <div class="card">
           <h2>Inventory Controls</h2>
-          <p class="hint">System maintenance and barcode utilities.</p>
+          <p class="hint">System maintenance and barcode tools.</p>
           
           <div class="field" style="margin-top: 20px;">
             <label>Barcode Utilities</label>
             <div class="row" style="flex-direction: column; gap: 10px;">
               <button id="btn-downloadBarcodes" class="btn btn-ghost" style="width: 100%; text-align: left;">
                 📥 Download Barcodes to Drive
-                <span class="hint" style="display:block; font-size: 11px;">Saves PNGs for all items to the Google Drive folder.</span>
+                <span class="hint" style="display:block; font-size: 11px;">Generates PNGs for all items and saves to Google Drive.</span>
               </button>
               
               <button id="btn-createBarcodes" class="btn btn-ghost" style="width: 100%; text-align: left;">
                 ✨ Create Missing Barcodes in Smartsheet
-                <span class="hint" style="display:block; font-size: 11px;">Finds items without barcodes and uploads images to Smartsheet.</span>
+                <span class="hint" style="display:block; font-size: 11px;">Uploads generated images for rows missing a barcode.</span>
               </button>
             </div>
           </div>
@@ -54,7 +155,7 @@
             <label>Data Sync</label>
             <button id="btn-syncDropdown" class="btn btn-ghost" style="width: 100%; text-align: left;">
               🔄 Update Dropdown Options
-              <span class="hint" style="display:block; font-size: 11px;">Syncs Item names to the "Enhanced Item" dropdown in Logs.</span>
+              <span class="hint" style="display:block; font-size: 11px;">Syncs "Item" names to the Log sheet picklist.</span>
             </button>
           </div>
 
@@ -63,9 +164,12 @@
       </section>
     </main>
   </div>
-  
+
   <div id="scannerModal" class="modal hidden">
-    <!-- ... existing scanner code ... -->
+    <div class="modal-content">
+      <div id="scannerRegion"></div>
+      <button id="closeScanner" class="btn btn-ghost" style="width:100%; margin-top:10px;">Close</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
