@@ -1,0 +1,6 @@
+smartsheet-python-sdk
+python-barcode
+Pillow
+requests
+google-api-python-client
+google-auth
