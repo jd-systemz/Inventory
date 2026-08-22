@@ -1,5 +1,5 @@
 // PASTE your deployed Apps Script Web App URL here
-const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxx448moFrOP0e5lYa9FBpzXiXdCgvyqT3xhYHhfuL-ecdJk8as7pSvFeZfmhvYGbQ-/exec';
 const LAST_VIEW_KEY = 'inventory_last_view';
 const THEME_KEY = 'inventory_theme';
 
