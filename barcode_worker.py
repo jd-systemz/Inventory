@@ -235,15 +235,31 @@ def build_print_image(labeled_barcode_img, product_image_bytes):
 # ===================== GOOGLE DRIVE HELPERS (download mode only) =====================
 
 def get_drive_service():
-    from google.oauth2 import service_account
+    # Uses OAuth as YOUR Google account (via a saved refresh token), not a
+    # service account - service accounts have no Drive storage quota of
+    # their own on a regular (non-Shared-Drive) folder, so uploads to a
+    # personal Drive folder fail with a storageQuotaExceeded error. See
+    # get_drive_refresh_token.py for how these three values are generated.
+    from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
 
-    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-    if not raw:
-        sys.exit("GOOGLE_SERVICE_ACCOUNT_JSON is not set (required for MODE=download).")
-    info = json.loads(raw)
-    creds = service_account.Credentials.from_service_account_info(
-        info, scopes=["https://www.googleapis.com/auth/drive"]
+    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
+    refresh_token = os.environ.get("GOOGLE_OAUTH_REFRESH_TOKEN")
+    if not (client_id and client_secret and refresh_token):
+        sys.exit(
+            "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / "
+            "GOOGLE_OAUTH_REFRESH_TOKEN are not all set (required for MODE=download). "
+            "Run get_drive_refresh_token.py once locally to generate them."
+        )
+
+    creds = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_uri="https://oauth2.googleapis.com/token",
+        scopes=["https://www.googleapis.com/auth/drive"],
     )
     return build("drive", "v3", credentials=creds)
 
