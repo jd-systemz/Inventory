@@ -274,8 +274,13 @@ def get_drive_service():
 
 
 def drive_file_exists(service, folder_id, filename):
+    # Drive's query syntax requires literal backslashes and single quotes in
+    # the value to be escaped, or a filename containing one (e.g. an item
+    # name using an apostrophe for feet/inches, like DOUBLE SIDED TAPE 1')
+    # breaks the query string and the API returns a 400 "Invalid Value".
+    safe_name = filename.replace("\\", "\\\\").replace("'", "\\'")
     query = (
-        f"'{folder_id}' in parents and name = '{filename}' and trashed = false"
+        f"'{folder_id}' in parents and name = '{safe_name}' and trashed = false"
     )
     resp = service.files().list(q=query, fields="files(id, name)", pageSize=1).execute()
     return bool(resp.get("files"))
@@ -367,11 +372,11 @@ def run_download_mode(client, token):
             file_label = build_file_label(item_code_val, item_name_val)
             filename = f"{file_label}.png"
 
-            if drive_file_exists(drive, DRIVE_FOLDER_ID, filename):
-                skipped_exists += 1
-                continue
-
             try:
+                if drive_file_exists(drive, DRIVE_FOLDER_ID, filename):
+                    skipped_exists += 1
+                    continue
+
                 plain_path = generate_barcode_image(item_code_val, tmp)
                 labeled_img = (
                     build_labeled_barcode_image(plain_path, item_name_val)
