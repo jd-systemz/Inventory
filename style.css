@@ -378,7 +378,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     grid-template-areas:
       "topbar topbar"
       "sidemenu main";
-    min-height: 100vh;
+    height: 100vh;      /* was min-height: 100vh */
+    overflow: hidden;   /* the shell itself never scrolls */
   }
   .topbar { grid-area: topbar; }
   #menuBtn { display: none; }
@@ -386,7 +387,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     grid-area: sidemenu;
     position: static;
     transform: none;
-    height: auto;
+    height: 100%;       /* was: height: auto */
+    overflow-y: auto;   /* only scrolls if you add enough menu items to overflow */
     padding-top: 24px;
     border-right: 1px solid var(--border);
   }
@@ -396,5 +398,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     max-width: 760px;
     margin: 0;
     padding: 32px 40px;
+    height: 100%;       /* new */
+    overflow-y: auto;   /* new — this is the only thing that scrolls now */
   }
 }
