@@ -62,10 +62,12 @@ BARCODE_FONT_SIZE = 8
 BARCODE_TEXT_DISTANCE = 4
 
 LABEL_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "LabelFont.ttf")
-LABEL_FONT_SIZE = 25
-LABEL_GAP_PX = 2
-LABEL_TOP_PADDING_PX = 10
+LABEL_FONT_SIZE = 34            # was 25 — bigger, closer to the original Bahnschrift look
+LABEL_GAP_PX = 4
+LABEL_TOP_PADDING_PX = 26       # more breathing room above the item name (was 10)
 LABEL_LINE_SPACING_PX = 8
+LABEL_STROKE_WIDTH = 1          # thickens the strokes a bit to fake a semi-bold weight
+                                 # when LabelFont.ttf isn't itself a bold weight
 
 PRINT_PHOTO_BOX_WIDTH_PX = 250
 PRINT_PHOTO_BOX_HEIGHT_PX = 290
@@ -149,8 +151,12 @@ def generate_barcode_image(item_code, folder):
 
 def _get_label_font():
     try:
-        return ImageFont.truetype(LABEL_FONT_PATH, LABEL_FONT_SIZE)
-    except Exception:
+        font = ImageFont.truetype(LABEL_FONT_PATH, LABEL_FONT_SIZE)
+        print(f"[FONT] Loaded custom label font from {LABEL_FONT_PATH}")
+        return font
+    except Exception as e:
+        print(f"[FONT] Could not load {LABEL_FONT_PATH} ({e}) — falling back to PIL's "
+              f"built-in default font. This is almost certainly why labels look cramped/small.")
         return ImageFont.load_default()
 
 
@@ -162,7 +168,7 @@ def wrap_text_to_width(text, font, max_width, draw):
     current_line = words[-1]
     for word in reversed(words[:-1]):
         candidate = f"{word} {current_line}"
-        bbox = draw.textbbox((0, 0), candidate, font=font)
+        bbox = draw.textbbox((0, 0), candidate, font=font, stroke_width=LABEL_STROKE_WIDTH)
         if (bbox[2] - bbox[0]) <= max_width:
             current_line = candidate
         else:
@@ -181,7 +187,7 @@ def build_labeled_barcode_image(barcode_path, item_name):
     draw = ImageDraw.Draw(dummy)
     lines = wrap_text_to_width(item_name, font, bw, draw)
 
-    line_bboxes = [draw.textbbox((0, 0), line, font=font) for line in lines]
+    line_bboxes = [draw.textbbox((0, 0), line, font=font, stroke_width=LABEL_STROKE_WIDTH) for line in lines]
     line_widths = [b[2] - b[0] for b in line_bboxes]
     line_heights = [b[3] - b[1] for b in line_bboxes]
 
@@ -196,7 +202,10 @@ def build_labeled_barcode_image(barcode_path, item_name):
     y = LABEL_TOP_PADDING_PX
     for line, bbox, w, h in zip(lines, line_bboxes, line_widths, line_heights):
         x = (canvas_w - w) // 2
-        draw.text((x - bbox[0], y - bbox[1]), line, font=font, fill="black")
+        draw.text(
+            (x - bbox[0], y - bbox[1]), line, font=font, fill="black",
+            stroke_width=LABEL_STROKE_WIDTH, stroke_fill="black",
+        )
         y += h + LABEL_LINE_SPACING_PX
 
     barcode_x = (canvas_w - bw) // 2
