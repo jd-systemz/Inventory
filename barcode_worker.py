@@ -61,7 +61,7 @@ ITEM_IMAGE_COLUMN_NAME = "Image"
 BARCODE_FONT_SIZE = 8
 BARCODE_TEXT_DISTANCE = 4
 
-LABEL_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "LabelFont.ttf")
+LABEL_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "LabelFont.TTF")
 LABEL_FONT_SIZE = 34            # was 25 — bigger, closer to the original Bahnschrift look
 LABEL_GAP_PX = 4
 LABEL_TOP_PADDING_PX = 26       # more breathing room above the item name (was 10)
