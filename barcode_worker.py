@@ -66,8 +66,6 @@ LABEL_FONT_SIZE = 34            # was 25 — bigger, closer to the original Bahn
 LABEL_GAP_PX = 4
 LABEL_TOP_PADDING_PX = 26       # more breathing room above the item name (was 10)
 LABEL_LINE_SPACING_PX = 8
-LABEL_STROKE_WIDTH = 1          # thickens the strokes a bit to fake a semi-bold weight
-                                 # when LabelFont.ttf isn't itself a bold weight
 
 PRINT_PHOTO_BOX_WIDTH_PX = 250
 PRINT_PHOTO_BOX_HEIGHT_PX = 290
