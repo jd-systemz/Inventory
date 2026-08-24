@@ -61,7 +61,7 @@ ITEM_IMAGE_COLUMN_NAME = "Image"
 BARCODE_FONT_SIZE = 8
 BARCODE_TEXT_DISTANCE = 4
 
-LABEL_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "LabelFont.TTF")
+LABEL_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "LabelFont.ttf")
 LABEL_FONT_SIZE = 34            # was 25 — bigger, closer to the original Bahnschrift look
 LABEL_GAP_PX = 4
 LABEL_TOP_PADDING_PX = 26       # more breathing room above the item name (was 10)
@@ -166,7 +166,7 @@ def wrap_text_to_width(text, font, max_width, draw):
     current_line = words[-1]
     for word in reversed(words[:-1]):
         candidate = f"{word} {current_line}"
-        bbox = draw.textbbox((0, 0), candidate, font=font, stroke_width=LABEL_STROKE_WIDTH)
+        bbox = draw.textbbox((0, 0), candidate, font=font)
         if (bbox[2] - bbox[0]) <= max_width:
             current_line = candidate
         else:
@@ -185,7 +185,7 @@ def build_labeled_barcode_image(barcode_path, item_name):
     draw = ImageDraw.Draw(dummy)
     lines = wrap_text_to_width(item_name, font, bw, draw)
 
-    line_bboxes = [draw.textbbox((0, 0), line, font=font, stroke_width=LABEL_STROKE_WIDTH) for line in lines]
+    line_bboxes = [draw.textbbox((0, 0), line, font=font) for line in lines]
     line_widths = [b[2] - b[0] for b in line_bboxes]
     line_heights = [b[3] - b[1] for b in line_bboxes]
 
@@ -200,10 +200,7 @@ def build_labeled_barcode_image(barcode_path, item_name):
     y = LABEL_TOP_PADDING_PX
     for line, bbox, w, h in zip(lines, line_bboxes, line_widths, line_heights):
         x = (canvas_w - w) // 2
-        draw.text(
-            (x - bbox[0], y - bbox[1]), line, font=font, fill="black",
-            stroke_width=LABEL_STROKE_WIDTH, stroke_fill="black",
-        )
+        draw.text((x - bbox[0], y - bbox[1]), line, font=font, fill="black")
         y += h + LABEL_LINE_SPACING_PX
 
     barcode_x = (canvas_w - bw) // 2
