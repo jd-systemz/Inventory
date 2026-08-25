@@ -803,6 +803,18 @@ function setupBulkForm(prefix, type) {
   const qtyInput = document.getElementById(prefix + '-qty');
   const lobSel = document.getElementById(prefix + '-lob');
   const completedSel = document.getElementById(prefix + '-completed');
+  const sizeInput = document.getElementById(prefix + '-size');
+  const uomInput = document.getElementById(prefix + '-uom');
+  const purposeSel = document.getElementById(prefix + '-purpose');
+
+  function getRequestStatus() {
+    const checked = document.querySelector('input[name="' + prefix + '-requestStatus"]:checked');
+    return checked ? checked.value : 'Ongoing';
+  }
+  function resetRequestStatus() {
+    const ongoingRadio = document.querySelector('input[name="' + prefix + '-requestStatus"][value="Ongoing"]');
+    if (ongoingRadio) ongoingRadio.checked = true;
+  }
   const addBtn = document.getElementById(prefix + '-add');
   const tableBody = document.querySelector('#' + prefix + '-table tbody');
   const countEl = document.getElementById(prefix + '-count');
@@ -825,6 +837,7 @@ function setupBulkForm(prefix, type) {
         '<td>' + escapeHtml(row.qty) + '</td>' +
         '<td>' + escapeHtml(row.lob) + '</td>' +
         '<td>' + escapeHtml(row.completed) + '</td>' +
+        '<td>' + escapeHtml(row.requestStatus) + '</td>' +
         '<td><button type="button" class="remove-line" data-idx="' + idx + '">&#10005;</button></td>';
       tableBody.appendChild(tr);
     });
@@ -855,13 +868,21 @@ function setupBulkForm(prefix, type) {
       unitPrice: priceInput.value || 0,
       qty: qtyInput.value,
       lob: lobSel.value,
-      completed: completedSel.value
+      completed: completedSel.value,
+      size: sizeInput ? sizeInput.value.trim() : '',
+      uom: uomInput ? uomInput.value.trim() : '',
+      purpose: purposeSel ? purposeSel.value : 'Material Request',
+      requestStatus: getRequestStatus()
     });
     render();
 
     combos[prefix + '-item'].clear();
     priceInput.value = '';
     qtyInput.value = '';
+    if (sizeInput) sizeInput.value = '';
+    if (uomInput) uomInput.value = '';
+    // Request Status and Purpose are deliberately NOT reset here — a whole
+    // batch is usually the same MRF# and same status/purpose.
   });
 
   submitAllBtn.addEventListener('click', async function () {
@@ -914,6 +935,14 @@ function setupBulkForm(prefix, type) {
         msg.innerHTML += ' <a href="' + res.sheetUrl + '" target="_blank" rel="noopener" class="sheet-link-inline">View in Smartsheet &#8599;</a>';
       }
       if (res.attachmentWarning) msg.innerHTML += '<br>' + escapeHtml(res.attachmentWarning);
+      if (res.secondSheetWarning) {
+        msg.innerHTML += '<br>' + escapeHtml(res.secondSheetWarning);
+      } else if (res.secondSheetCount) {
+        msg.innerHTML += '<br>Mirrored ' + res.secondSheetCount + ' row(s) to MRF & PO Monitoring.';
+      }
+      if (res.cascadedMrfNumbers && res.cascadedMrfNumbers.length) {
+        msg.innerHTML += '<br>Marked all rows for MRF# ' + res.cascadedMrfNumbers.map(escapeHtml).join(', ') + ' as Completed.';
+      }
 
       pending = [];
       render();
@@ -924,6 +953,7 @@ function setupBulkForm(prefix, type) {
       qtyInput.value = '';
       lobSel.value = '';
       completedSel.value = 'YES';
+      resetRequestStatus();
       if (attachmentInput) attachmentInput.value = '';
       if (requestorCombo) requestorCombo.clear();
     } catch (err) {
