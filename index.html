@@ -231,6 +231,10 @@
               <div class="field"><label for="receiving-qty">QTY</label><input type="number" id="receiving-qty" step="1" min="1" /></div>
             </div>
             <div class="row">
+              <div class="field"><label for="receiving-size">Size <span class="hint">(optional)</span></label><input type="text" id="receiving-size" placeholder="e.g. 10mm" /></div>
+              <div class="field"><label for="receiving-uom">U.O.M. <span class="hint">(optional)</span></label><input type="text" id="receiving-uom" list="uom-suggestions" placeholder="e.g. PCS" /></div>
+            </div>
+            <div class="row">
               <div class="field">
                 <label for="receiving-lob">INV</label>
                 <select id="receiving-lob">
@@ -248,6 +252,21 @@
                 </select>
               </div>
             </div>
+            <div class="field">
+              <label for="receiving-purpose">Purpose</label>
+              <select id="receiving-purpose">
+                <option value="Material Request" selected>Material Request</option>
+                <option value="Inhouse">Inhouse</option>
+                <option value="Outsource">Outsource</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Request Status <span class="hint">(mirrors to MRF & PO Monitoring — set to Completed to close out this MRF# everywhere)</span></label>
+              <div class="radio-row">
+                <label class="radio-option"><input type="radio" name="receiving-requestStatus" value="Ongoing" checked /> Ongoing</label>
+                <label class="radio-option"><input type="radio" name="receiving-requestStatus" value="Completed" /> Completed</label>
+              </div>
+            </div>
             <button type="button" id="receiving-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
@@ -255,7 +274,7 @@
             <h3>Items to submit (<span id="receiving-count">0</span>)</h3>
             <div class="table-wrap">
               <table id="receiving-table" class="line-table">
-                <thead><tr><th>Item</th><th>MRF#</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th>MRF#</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Req. Status</th><th></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -322,6 +341,10 @@
               <div class="field"><label for="issuance-qty">QTY</label><input type="number" id="issuance-qty" step="1" min="1" /></div>
             </div>
             <div class="row">
+              <div class="field"><label for="issuance-size">Size <span class="hint">(optional)</span></label><input type="text" id="issuance-size" placeholder="e.g. 10mm" /></div>
+              <div class="field"><label for="issuance-uom">U.O.M. <span class="hint">(optional)</span></label><input type="text" id="issuance-uom" list="uom-suggestions" placeholder="e.g. PCS" /></div>
+            </div>
+            <div class="row">
               <div class="field">
                 <label for="issuance-lob">INV</label>
                 <select id="issuance-lob">
@@ -339,6 +362,21 @@
                 </select>
               </div>
             </div>
+            <div class="field">
+              <label for="issuance-purpose">Purpose</label>
+              <select id="issuance-purpose">
+                <option value="Material Request" selected>Material Request</option>
+                <option value="Inhouse">Inhouse</option>
+                <option value="Outsource">Outsource</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Request Status <span class="hint">(mirrors to MRF & PO Monitoring — set to Completed to close out this MRF# everywhere)</span></label>
+              <div class="radio-row">
+                <label class="radio-option"><input type="radio" name="issuance-requestStatus" value="Ongoing" checked /> Ongoing</label>
+                <label class="radio-option"><input type="radio" name="issuance-requestStatus" value="Completed" /> Completed</label>
+              </div>
+            </div>
             <button type="button" id="issuance-add" class="btn btn-primary">+ Add to List</button>
           </div>
 
@@ -346,7 +384,7 @@
             <h3>Items to submit (<span id="issuance-count">0</span>)</h3>
             <div class="table-wrap">
               <table id="issuance-table" class="line-table">
-                <thead><tr><th>Item</th><th>MRF#</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th>MRF#</th><th>Price</th><th>Qty</th><th>LOB</th><th>Done</th><th>Req. Status</th><th></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -356,7 +394,7 @@
         </div>
       </section>
 
-      <!-- Inventory Controls (new) -->
+      <!-- Inventory Controls -->
       <section id="view-inventoryControls" class="view">
         <div class="card">
           <h2>Inventory Controls</h2>
@@ -387,6 +425,21 @@
       </section>
     </main>
   </div>
+
+  <!-- Shared UOM suggestions, referenced by both Receiving and Issuance size/uom fields via list="uom-suggestions" -->
+  <datalist id="uom-suggestions">
+    <option value="PCS"></option>
+    <option value="SHEET"></option>
+    <option value="ROLL"></option>
+    <option value="GALLON"></option>
+    <option value="BOX"></option>
+    <option value="SET"></option>
+    <option value="PACK"></option>
+    <option value="METER"></option>
+    <option value="LITER"></option>
+    <option value="KG"></option>
+    <option value="UNIT"></option>
+  </datalist>
 
   <!-- Shared scanner modal. In "continuous" mode (Update Rack / Barcode Done)
        it stays open across multiple scans and shows live feedback below the
