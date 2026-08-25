@@ -11,45 +11,14 @@
   --purple-glow: rgba(139, 124, 246, 0.35);
   --danger: #ff8a8a;
   --success: #9be6b1;
+  --topbar-height: 68px; /* used to offset the sticky sidebar below the sticky topbar */
 }
-
-/* ---- Light mode: soft lavender-tinted white, not a flat white/black swap ---- */
-:root[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f5f3fb;
-  --panel: #ffffff;
-  --panel-alt: #f4f1fc;
-  --border: #e2dcf5;
-  --text: #2a2438;
-  --text-dim: #756c8c;
-  --lavender: #7c5cff;
-  --purple: #6d3bf0;
-  --purple-glow: rgba(124, 92, 255, 0.16);
-  --danger: #d1465d;
-  --success: #1c9d64;
-}
-:root[data-theme="light"] .topbar {
-  background: linear-gradient(180deg, #ffffff, #f7f4ff);
-  border-bottom: 1px solid var(--border);
-}
-:root[data-theme="light"] .card {
-  box-shadow: 0 0 0 1px rgba(124,92,255,0.04), 0 10px 30px rgba(124,92,255,0.08);
-}
-:root[data-theme="light"] .btn-primary {
-  color: #ffffff;
-}
-:root[data-theme="light"] .side-menu {
-  background: #ffffff;
-}
-:root[data-theme="light"] .scanner-box { background: #111; }
-
 * { box-sizing: border-box; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
-  transition: background-color .2s ease, color .2s ease;
 }
 .topbar {
   display: flex;
@@ -189,7 +158,6 @@ input[type="file"]::file-selector-button {
   margin-right: 10px;
 }
 input::placeholder { color: var(--text-dim); opacity: 0.7; }
-input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn {
   border: none;
@@ -257,22 +225,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   background: #000;
   min-height: 0;
 }
-.scanner-feedback {
-  margin-top: 12px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--panel-alt);
-  border: 1px solid var(--border);
-  font-size: 13.5px;
-  color: var(--text);
-}
-.scanner-feedback.hidden { display: none; }
-.scanner-feedback .feedback-line { padding: 4px 0; border-bottom: 1px dashed var(--border); }
-.scanner-feedback .feedback-line:last-child { border-bottom: none; }
-.scanner-feedback .feedback-line.ok { color: var(--success); }
-.scanner-feedback .feedback-line.err { color: var(--danger); }
 
 .line-entry {
   margin-top: 6px;
@@ -378,31 +330,51 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     grid-template-areas:
       "topbar topbar"
       "sidemenu main";
-    height: 100vh;      /* was min-height: 100vh */
-    overflow: hidden;   /* the shell itself never scrolls */
+    min-height: 100vh;
   }
-  .topbar { grid-area: topbar; }
+  .topbar {
+    grid-area: topbar;
+    height: var(--topbar-height);
+  }
   #menuBtn { display: none; }
   .side-menu {
     grid-area: sidemenu;
-    position: static;
+    position: sticky;          /* stays put while the page scrolls */
+    top: var(--topbar-height); /* sits right below the sticky topbar, no overlap */
+    left: auto;
+    bottom: auto;
     transform: none;
-    height: 100%;       /* was: height: auto */
-    overflow-y: auto;   /* only scrolls if you add enough menu items to overflow */
+    height: calc(100vh - var(--topbar-height));
+    overflow-y: auto;          /* scrolls its own contents if the menu ever outgrows the viewport */
     padding-top: 24px;
     border-right: 1px solid var(--border);
+    align-self: start;         /* required for sticky to work correctly inside a grid row */
   }
   .overlay { display: none !important; }
-    main {
+  main {
     grid-area: main;
-    width: 100%;
-    max-width: none;      /* <-- add this line, cancels the 640px from the base rule */
-    height: 100%;
-    overflow-y: auto;
+    max-width: 760px;
+    margin: 0;
     padding: 32px 40px;
   }
-  main .view.active {
-    max-width: 760px;
-    margin: 0 auto;
-  }
+}
+
+/* Request Status radio buttons (Receiving / Issuance) */
+.radio-row {
+  display: flex;
+  gap: 20px;
+  padding: 10px 0 2px;
+}
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+.radio-option input[type="radio"] {
+  width: auto;
+  accent-color: var(--purple);
+  cursor: pointer;
 }
