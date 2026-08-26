@@ -59,6 +59,12 @@ function fileToBase64(file) {
   });
 }
 
+// Encodes every file in a FileList (from a multi-select <input type="file">)
+// in parallel, preserving order.
+function filesToBase64Array(fileList) {
+  return Promise.all(Array.from(fileList).map(fileToBase64));
+}
+
 // ===================== MENU (with last-view persistence) =====================
 
 const views = ['checkStocks', 'correctStocks', 'updateRack', 'barcodeDone', 'receiving', 'issuance', 'inventoryControls'];
@@ -912,8 +918,8 @@ function setupBulkForm(prefix, type) {
     try {
       const payload = { type: type, date: dateInput.value, rows: pending };
       if (resolvedRequestor) payload.requestor = resolvedRequestor;
-      if (attachmentInput && attachmentInput.files && attachmentInput.files[0]) {
-        payload.attachment = await fileToBase64(attachmentInput.files[0]);
+      if (attachmentInput && attachmentInput.files && attachmentInput.files.length) {
+        payload.attachments = await filesToBase64Array(attachmentInput.files);
       }
 
       const res = await apiPost('submitBulkTransactions', payload);
