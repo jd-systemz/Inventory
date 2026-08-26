@@ -196,8 +196,15 @@
           </div>
 
           <div class="field">
-            <label for="receiving-attachment">Attachment(s) <span class="hint">(optional — photo/receipt, can pick multiple files)</span></label>
-            <input type="file" id="receiving-attachment" accept="image/*,.pdf" multiple />
+            <label>Attachment(s) <span class="hint">(optional — click or drag & drop, multiple files allowed)</span></label>
+            <div class="dropzone" id="receiving-dropzone">
+              <input type="file" id="receiving-attachment" accept="image/*,.pdf" multiple hidden />
+              <div class="dropzone-inner">
+                <span class="dropzone-icon">&#128206;</span>
+                <span class="dropzone-text">Click to browse or drag files here</span>
+              </div>
+            </div>
+            <div class="filelist" id="receiving-attachment-filelist"></div>
           </div>
 
           <div class="line-entry">
@@ -306,8 +313,15 @@
           </div>
 
           <div class="field">
-            <label for="issuance-attachment">Attachment(s) <span class="hint">(optional — photo/receipt, can pick multiple files)</span></label>
-            <input type="file" id="issuance-attachment" accept="image/*,.pdf" multiple />
+            <label>Attachment(s) <span class="hint">(optional — click or drag & drop, multiple files allowed)</span></label>
+            <div class="dropzone" id="issuance-dropzone">
+              <input type="file" id="issuance-attachment" accept="image/*,.pdf" multiple hidden />
+              <div class="dropzone-inner">
+                <span class="dropzone-icon">&#128206;</span>
+                <span class="dropzone-text">Click to browse or drag files here</span>
+              </div>
+            </div>
+            <div class="filelist" id="issuance-attachment-filelist"></div>
           </div>
 
           <div class="line-entry">
