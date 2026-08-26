@@ -65,6 +65,86 @@ function filesToBase64Array(fileList) {
   return Promise.all(Array.from(fileList).map(fileToBase64));
 }
 
+// ===================== DRAG-AND-DROP ATTACHMENT ZONE =====================
+// Keeps its own file list in memory (not the native <input>'s FileList,
+// which can't easily be appended to) so that clicking to browse AND
+// dragging files in both add to the same pending set, with per-file remove
+// buttons. Call once per prefix; returns { getFiles, reset }.
+
+function humanFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  const units = ['KB', 'MB', 'GB'];
+  let i = -1;
+  do { bytes /= 1024; i++; } while (bytes >= 1024 && i < units.length - 1);
+  return bytes.toFixed(1) + ' ' + units[i];
+}
+
+function setupDropzone(prefix) {
+  const zone = document.getElementById(prefix + '-dropzone');
+  const input = document.getElementById(prefix + '-attachment');
+  const listEl = document.getElementById(prefix + '-attachment-filelist');
+  if (!zone || !input || !listEl) return { getFiles: function () { return []; }, reset: function () {} };
+
+  let files = [];
+
+  function render() {
+    listEl.innerHTML = '';
+    files.forEach(function (f, idx) {
+      const item = document.createElement('div');
+      item.className = 'filelist-item';
+      item.innerHTML =
+        '<span class="filelist-item-name">' + escapeHtml(f.name) + '</span>' +
+        '<span class="filelist-item-size">' + humanFileSize(f.size) + '</span>' +
+        '<button type="button" class="filelist-remove" data-idx="' + idx + '">&#10005;</button>';
+      listEl.appendChild(item);
+    });
+    listEl.querySelectorAll('.filelist-remove').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        files.splice(Number(btn.dataset.idx), 1);
+        render();
+      });
+    });
+  }
+
+  function addFiles(fileListLike) {
+    Array.from(fileListLike).forEach(function (f) { files.push(f); });
+    render();
+  }
+
+  zone.addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', function () {
+    addFiles(input.files);
+    input.value = ''; // reset so picking the same file again still fires 'change'
+  });
+
+  zone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', function () {
+    zone.classList.remove('dragover');
+  });
+  zone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      addFiles(e.dataTransfer.files);
+    }
+  });
+
+  return {
+    getFiles: function () { return files; },
+    reset: function () { files = []; render(); }
+  };
+}
+
+// Safety net: without this, dropping a file anywhere outside a dropzone
+// makes the browser navigate away and open/download that file instead of
+// just ignoring the drop.
+window.addEventListener('dragover', function (e) { e.preventDefault(); });
+window.addEventListener('drop', function (e) { e.preventDefault(); });
+
 // ===================== MENU (with last-view persistence) =====================
 
 const views = ['checkStocks', 'correctStocks', 'updateRack', 'barcodeDone', 'receiving', 'issuance', 'inventoryControls'];
@@ -826,7 +906,7 @@ function setupBulkForm(prefix, type) {
   const countEl = document.getElementById(prefix + '-count');
   const submitAllBtn = document.getElementById(prefix + '-submit-all');
   const msg = document.getElementById('msg-' + prefix);
-  const attachmentInput = document.getElementById(prefix + '-attachment');
+  const attachmentZone = setupDropzone(prefix);
   const requestorCombo = combos[prefix + '-requestor'];
 
   let pending = [];
@@ -918,8 +998,9 @@ function setupBulkForm(prefix, type) {
     try {
       const payload = { type: type, date: dateInput.value, rows: pending };
       if (resolvedRequestor) payload.requestor = resolvedRequestor;
-      if (attachmentInput && attachmentInput.files && attachmentInput.files.length) {
-        payload.attachments = await filesToBase64Array(attachmentInput.files);
+      const attachedFiles = attachmentZone.getFiles();
+      if (attachedFiles.length) {
+        payload.attachments = await filesToBase64Array(attachedFiles);
       }
 
       const res = await apiPost('submitBulkTransactions', payload);
@@ -960,7 +1041,7 @@ function setupBulkForm(prefix, type) {
       lobSel.value = '';
       completedSel.value = 'YES';
       resetRequestStatus();
-      if (attachmentInput) attachmentInput.value = '';
+      attachmentZone.reset();
       if (requestorCombo) requestorCombo.clear();
     } catch (err) {
       msg.className = 'msg error';
